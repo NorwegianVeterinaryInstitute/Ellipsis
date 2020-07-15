@@ -2,15 +2,12 @@ assemblyfiles = Channel
 	.fromPath(params.assemblies)
 	.map { file -> tuple(file.baseName, file) }
 
-readfiles = Channel
-	.fromFilePairs(params.reads)
-
-
-
 process MOBSUITE {
         publishDir "${params.outdir}/mobsuite/plasmid_fasta", pattern: "*plasmid*fasta", mode: "copy"
         publishDir "${params.outdir}/mobsuite/mobtyper_reports", pattern: "*_mobtyper_plasmid_*.fasta_report.txt", mode: "copy"
  	publishDir "${params.outdir}/mobsuite", pattern: "*mob_recon.log", mode: "copy"
+	
+	tag "$datasetID"	
 
         input:
         set datasetID, file(datasetFile) from assemblyfiles
@@ -33,6 +30,8 @@ process RESFINDER {
         publishDir "${params.outdir}/resfinder", pattern: "*results_tab.tsv", mode: "copy"
 	publishDir "${params.outdir}/resfinder", pattern: "*resfinder.log", mode: "copy"
 
+	tag "$x"
+
 	input:
 	tuple x, file("*plasmid*fasta") from resFasta
         
@@ -50,6 +49,8 @@ process VIRFINDER {
         publishDir "${params.outdir}/virfinder", pattern: "*results_tab.tsv", mode: "copy"
 	publishDir "${params.outdir}/virfinder", pattern: "*virfinder.log", mode: "copy"
 
+	tag "$x"
+
         input:
         tuple x, file("*plasmid*fasta") from virFasta
 
@@ -66,6 +67,8 @@ process PLASMIDFINDER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
         publishDir "${params.outdir}/plasmidfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.outdir}/plasmidfinder", pattern: "*plasmidfinder.log", mode: "copy"
+
+	tag "$x"
 
         input:
         tuple x, file("*plasmid*fasta") from plasFasta
@@ -97,9 +100,10 @@ process PROKKA {
 }
 */
 
+/*
 process MAP {
 	publishDir "${params.outdir}/mapping/mapped", pattern: "*txt", mode: "copy"
-	tag { pair_id }
+	tag "$pair_id, $x"
 
 	input:
 	set pair_id, file(rawreads) from readfiles
@@ -112,3 +116,4 @@ process MAP {
 	echo $x $rawreads > ${x}_results.txt	
 	"""
 }
+*/
