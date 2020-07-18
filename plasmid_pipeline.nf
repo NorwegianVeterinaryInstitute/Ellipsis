@@ -1,3 +1,15 @@
+log.info "================================================="
+log.info " Plasmid Reconstruction and Improvement Pipeline"
+log.info "================================================="
+log.info "Assemblies		: ${params.assemblies}"
+log.info "Reads                 : ${params.reads}"
+log.info "AMR database		: ${params.amr_db}"
+log.info "Virulence database	: ${params.vir_db}"
+log.info "Output directory	: ${params.outdir}"
+log.info "================================================="
+log.info ""
+
+// Channels
 Channel
         .fromPath(params.assemblies)
         .map { file -> tuple(file.baseName, file) }
@@ -7,6 +19,16 @@ Channel
         .fromFilePairs(params.reads, flat: true)
         .set { readfiles }
 
+Channel
+	.fromPath(params.amr_db)
+	.set { amrDB_ch }
+
+Channel
+	.fromPath(params.vir_db)
+	.set { virDB_ch }
+
+
+// Pipeline
 process MOBSUITE {
         publishDir "${params.outdir}/mobsuite/plasmid_fasta", pattern: "*plasmid*fasta", mode: "copy"
         publishDir "${params.outdir}/mobsuite/mobtyper_reports", pattern: "*_mobtyper_plasmid_*.fasta_report.txt", mode: "copy"
@@ -38,6 +60,8 @@ process RESFINDER {
 	publishDir "${params.outdir}/resfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.outdir}/resfinder", pattern: "*resfinder.log", mode: "copy"
 
+	tag "$datasetID"
+
         input:
         set datasetID, file(plasmid) from resFasta
 
@@ -55,6 +79,8 @@ process VIRFINDER {
         
 	publishDir "${params.outdir}/virfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.outdir}/virfinder", pattern: "*virfinder.log", mode: "copy"
+
+	tag "$datasetID"
 
         input:
         set datasetID, file(plasmid) from virFasta
@@ -74,6 +100,8 @@ process PLASFINDER {
 	publishDir "${params.outdir}/plasmidfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.outdir}/plasmidfinder", pattern: "*plasmidfinder.log", mode: "copy"
 
+	tag "$datasetID"	
+
         input:
         set datasetID, file(plasmid) from plasFasta
 
@@ -92,17 +120,18 @@ readfiles.combine(mapFasta, by: 0)
 process BBDUK {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/BBTools"
 
-        publishDir "${params.outdir}/bbduk/${datasetID}/${plasmid}", pattern: "*mapped*", mode: "copy"
-        publishDir "${params.outdir}/bbduk/${datasetID}/${plasmid}", pattern: "*matched*", mode: "copy"
-        publishDir "${params.outdir}/bbduk/${datasetID}/${plasmid}", pattern: "*log", mode: "copy"
+        publishDir "${params.outdir}/bbduk", pattern: "*mapped*", mode: "copy"
+        publishDir "${params.outdir}/bbduk", pattern: "*matched*", mode: "copy"
+        publishDir "${params.outdir}/bbduk", pattern: "*log", mode: "copy"
+
+	tag "$datasetID"
 
         input:
         tuple datasetID, file(R1), file(R2), file(plasmid) from bbmapCh
 
         output:
         file("*")
-        tuple datasetID, file("*1_matched*"), file("*2_matched*") into mappedReads_ch
-
+        tuple datasetID, file("*1_matched*"), file("*2_matched*") into (mappedReads_ch, aribaReads_ch)
 
         """
         bbduk.sh ref=$plasmid in=$R1 in2=$R2 out=${plasmid}_unmapped.fastq.gz outm1=${plasmid}_1_matched.fastq.gz outm2=${plasmid}_2_matched.fastq.gz &> ${plasmid}_bbduk.log
@@ -115,15 +144,31 @@ process UNICYCLER {
         publishDir "${params.outdir}/unicycler/", pattern: "*assembly.fasta", mode: "copy"
         publishDir "${params.outdir}/unicycler/", pattern: "*unicycler.log", mode: "copy"
 
+	tag "$datasetID"
+	label 'heavy'
+
         input:
         tuple datasetID, file(R1), file(R2) from mappedReads_ch
 
         output:
         file("*")
 
+	when:
+	!params.complete
+
         """
-        unicycler -1 $R1 -2 $R2 -o . --verbosity 2 --keep 2 --mode bold
+        unicycler -1 $R1 -2 $R2 -o . --verbosity 2 --keep 2 --mode $params.mode --threads $task.cpus
         rename '' "$R1.baseName"_ *
         """
 }
 
+process ARIBA_RES {
+
+	input:
+	tuple datasetID, file(R1), file(R2) from aribaReads_ch
+	file "db" from amrDB_ch
+
+	"""
+	echo ariba run --threads $task.cpus $db $R1 $R2 ${datasetID}_ariba
+	"""
+}
