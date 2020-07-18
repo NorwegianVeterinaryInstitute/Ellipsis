@@ -1,119 +1,129 @@
-assemblyfiles = Channel
-	.fromPath(params.assemblies)
-	.map { file -> tuple(file.baseName, file) }
+Channel
+        .fromPath(params.assemblies)
+        .map { file -> tuple(file.baseName, file) }
+        .set { assemblyfiles }
+
+Channel
+        .fromFilePairs(params.reads, flat: true)
+        .set { readfiles }
 
 process MOBSUITE {
         publishDir "${params.outdir}/mobsuite/plasmid_fasta", pattern: "*plasmid*fasta", mode: "copy"
         publishDir "${params.outdir}/mobsuite/mobtyper_reports", pattern: "*_mobtyper_plasmid_*.fasta_report.txt", mode: "copy"
  	publishDir "${params.outdir}/mobsuite", pattern: "*mob_recon.log", mode: "copy"
 	
-	tag "$datasetID"	
+        tag "$datasetID"
 
         input:
         set datasetID, file(datasetFile) from assemblyfiles
-        
-	output:
+
+        output:
         file("*")
-        file("*plasmid*fasta") into (resFasta, virFasta, plasFasta, prokkaFasta, mapFasta) mode flatten
-	file("*_mobtyper_plasmid_*.fasta_report.txt") into (mobreportPmlst, mobreportNCBI)
-        
-	errorStrategy 'ignore'
-        
+        tuple datasetID, file("*mobtyper_plasmid*report.txt") into mobreport
+        tuple datasetID, file("*plasmid*fasta") into plasmidFasta
+
+        errorStrategy 'ignore'
+
         """
         mob_recon --infile ${datasetFile} -c --debug --run_typer --outdir . &> mob_recon.log
-        rename '' ${datasetID}_ *
+        rename '' "$datasetID"_ *
         """
 }
+plasmidFasta.transpose(remainder: true)
+            .into{resFasta; virFasta; plasFasta; mapFasta}
 
 process RESFINDER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
-        publishDir "${params.outdir}/resfinder", pattern: "*results_tab.tsv", mode: "copy"
-	publishDir "${params.outdir}/resfinder", pattern: "*resfinder.log", mode: "copy"
-
-	tag "$x"
-
-	input:
-	tuple x, file("*plasmid*fasta") from resFasta
         
-	output:
+	publishDir "${params.outdir}/resfinder", pattern: "*results_tab.tsv", mode: "copy"
+        publishDir "${params.outdir}/resfinder", pattern: "*resfinder.log", mode: "copy"
+
+        input:
+        set datasetID, file(plasmid) from resFasta
+
+        output:
         file("*")
-        
-	"""
-        python /cluster/projects/nn9305k/src/resfinder/resfinder.py -i $x -o . -x -p /cluster/projects/nn9305k/src/resfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> resfinder.log
-        rename '' "$x.baseName"_ *
-	"""
+
+        """
+        python /cluster/projects/nn9305k/src/resfinder/resfinder.py -i $plasmid -o . -x -p /cluster/projects/nn9305k/src/resfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> resfinder.log
+        rename '' "$plasmid.baseName"_ *
+        """
 }
 
 process VIRFINDER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
-        publishDir "${params.outdir}/virfinder", pattern: "*results_tab.tsv", mode: "copy"
-	publishDir "${params.outdir}/virfinder", pattern: "*virfinder.log", mode: "copy"
-
-	tag "$x"
+        
+	publishDir "${params.outdir}/virfinder", pattern: "*results_tab.tsv", mode: "copy"
+        publishDir "${params.outdir}/virfinder", pattern: "*virfinder.log", mode: "copy"
 
         input:
-        tuple x, file("*plasmid*fasta") from virFasta
+        set datasetID, file(plasmid) from virFasta
 
         output:
         file("*")
 
         """
-        python /cluster/projects/nn9305k/src/virulencefinder/virulencefinder.py -i $x -o . -x -p /cluster/projects/nn9305k/src/virulencefinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> virfinder.log
-        rename '' "$x.baseName"_ *
+        python /cluster/projects/nn9305k/src/virulencefinder/virulencefinder.py -i $plasmid -o . -x -p /cluster/projects/nn9305k/src/virulencefinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> virfinder.log
+        rename '' "$plasmid.baseName"_ *
         """
 }
 
-process PLASMIDFINDER {
+process PLASFINDER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
-        publishDir "${params.outdir}/plasmidfinder", pattern: "*results_tab.tsv", mode: "copy"
+        
+	publishDir "${params.outdir}/plasmidfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.outdir}/plasmidfinder", pattern: "*plasmidfinder.log", mode: "copy"
 
-	tag "$x"
-
         input:
-        tuple x, file("*plasmid*fasta") from plasFasta
+        set datasetID, file(plasmid) from plasFasta
 
         output:
         file("*")
 
         """
-        python /cluster/projects/nn9305k/src/plasmidfinder/plasmidfinder.py -i $x -o . -x -p /cluster/projects/nn9305k/src/plasmidfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> plasmidfinder.log
-        rename '' "$x.baseName"_ *
+        python /cluster/projects/nn9305k/src/plasmidfinder/plasmidfinder.py -i $plasmid -o . -x -p /cluster/projects/nn9305k/src/plasmidfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> plasmidfinder.log
+        rename '' "$plasmid.baseName"_ *
         """
 }
-/*
-process PROKKA {
-	publishDir "${params.outdir}/prokka/gffs", pattern: "*.gff", mode: "copy"
-	publishDir "${params.outdir}/prokka/gbk", pattern: "*.gbk", mode: "copy"
-	publishDir "${params.outdir}/prokka/logs", pattern: "*.log", mode: "copy"
 
-	input:
-	tuple x, file("*plasmid*fasta") from prokkaFasta
+readfiles.combine(mapFasta, by: 0)
+         .set {bbmapCh}
 
-	output:
-	file("*")
+process BBDUK {
+        conda "/cluster/projects/nn9305k/src/miniconda/envs/BBTools"
 
-	"""
-	prokka --addgenes --compliant --prefix "$x.baseName" $x
-	sed '/^##FASTA/Q' *.gff > "$x.baseName"_noseq.gff
-	"""	
+        publishDir "${params.outdir}/bbduk/${datasetID}/${plasmid}", pattern: "*mapped*", mode: "copy"
+        publishDir "${params.outdir}/bbduk/${datasetID}/${plasmid}", pattern: "*matched*", mode: "copy"
+        publishDir "${params.outdir}/bbduk/${datasetID}/${plasmid}", pattern: "*log", mode: "copy"
+
+        input:
+        tuple datasetID, file(R1), file(R2), file(plasmid) from bbmapCh
+
+        output:
+        file("*")
+        tuple datasetID, file("*1_matched*"), file("*2_matched*") into mappedReads_ch
+
+
+        """
+        bbduk.sh ref=$plasmid in=$R1 in2=$R2 out=${plasmid}_unmapped.fastq.gz outm1=${plasmid}_1_matched.fastq.gz outm2=${plasmid}_2_matched.fastq.gz &> ${plasmid}_bbduk.log
+        """
 }
-*/
 
-/*
-process MAP {
-	publishDir "${params.outdir}/mapping/mapped", pattern: "*txt", mode: "copy"
-	tag "$pair_id, $x"
+process UNICYCLER {
+        conda "/cluster/projects/nn9305k/src/miniconda/envs/unicycler"
 
-	input:
-	set pair_id, file(rawreads) from readfiles
-	tuple x, file("*plasmid*fasta") from mapFasta
+        publishDir "${params.outdir}/unicycler/", pattern: "*assembly.fasta", mode: "copy"
+        publishDir "${params.outdir}/unicycler/", pattern: "*unicycler.log", mode: "copy"
 
-	output:
-	file("*")
+        input:
+        tuple datasetID, file(R1), file(R2) from mappedReads_ch
 
-	"""
-	echo $x $rawreads > ${x}_results.txt	
-	"""
+        output:
+        file("*")
+
+        """
+        unicycler -1 $R1 -2 $R2 -o . --verbosity 2 --keep 2 --mode bold
+        rename '' "$R1.baseName"_ *
+        """
 }
-*/
+
