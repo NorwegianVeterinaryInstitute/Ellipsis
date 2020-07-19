@@ -2,7 +2,7 @@ log.info "================================================="
 log.info " Plasmid Reconstruction and Improvement Pipeline"
 log.info "================================================="
 log.info "Assemblies		: ${params.assemblies}"
-log.info "Reads                 : ${params.reads}"
+log.info "Reads			: ${params.reads}"
 log.info "AMR database		: ${params.amr_db}"
 log.info "Virulence database	: ${params.vir_db}"
 log.info "Output directory	: ${params.outdir}"
@@ -20,11 +20,11 @@ Channel
         .set { readfiles }
 
 Channel
-	.fromPath(params.amr_db)
+	.value(params.amr_db)
 	.set { amrDB_ch }
 
 Channel
-	.fromPath(params.vir_db)
+	.value(params.vir_db)
 	.set { virDB_ch }
 
 
@@ -51,6 +51,7 @@ process MOBSUITE {
         rename '' "$datasetID"_ *
         """
 }
+
 plasmidFasta.transpose(remainder: true)
             .into{resFasta; virFasta; plasFasta; mapFasta}
 
@@ -162,13 +163,23 @@ process UNICYCLER {
         """
 }
 
-process ARIBA_RES {
+
+process ARIBA_AMR {
+	conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
+
+	publishDir "${params.outdir}/ariba/amr", pattern: "*report.tsv", mode: "copy"
+	publishDir "${params.outdir}/ariba/amr", pattern: "*ariba.log", mode: "copy"
 
 	input:
 	tuple datasetID, file(R1), file(R2) from aribaReads_ch
-	file "db" from amrDB_ch
+	val "db" from amrDB_ch
+
+	output:
+	file("*")
 
 	"""
-	echo ariba run --threads $task.cpus $db $R1 $R2 ${datasetID}_ariba
+	ariba run --threads $task.cpus --assembly_cov 200 --assembler spades --spades_mode wgs --verbose $db $R1 $R2 ${datasetID}_ariba &> ariba.log
+	cp ${datasetID}_ariba/report.tsv .
+	rename '' "$R1.baseName"_ *
 	"""
 }
