@@ -164,6 +164,7 @@ process BBDUK {
 	publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*matched*", mode: "copy"
 
 	tag "$plasmid.baseName"
+	label 'medium'
 
         input:
         tuple datasetID, file(R1), file(R2), file(plasmid) from bbdukCh
@@ -179,10 +180,6 @@ process BBDUK {
 
 process UNICYCLER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/unicycler"
-
-        publishDir "${params.outdir}/unicycler/", pattern: "*assembly.fasta", mode: "copy"
-        publishDir "${params.outdir}/unicycler/", pattern: "*unicycler.log", mode: "copy"
-	publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*assembly.fasta", mode: "copy"
 
 	tag "$plasmid.baseName"
 	label 'heavy'
