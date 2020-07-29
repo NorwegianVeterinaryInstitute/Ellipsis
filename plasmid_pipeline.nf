@@ -171,7 +171,7 @@ process BBDUK {
 
         output:
         file("*")
-        tuple plasmid, file("*1_matched*"), file("*2_matched*") into (mappedReads_ch, aribaReads_ch)
+        tuple file(plasmid), file("*1_matched*"), file("*2_matched*") into (mappedReads_ch, aribaReads_ch)
 
         """
         bbduk.sh ref=$plasmid in=$R1 in2=$R2 out=${plasmid.baseName}_unmapped.fastq.gz outm1=${plasmid.baseName}_1_matched.fastq.gz outm2=${plasmid.baseName}_2_matched.fastq.gz &> ${plasmid.baseName}_bbduk.log
@@ -181,11 +181,15 @@ process BBDUK {
 process UNICYCLER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/unicycler"
 
+	publishDir "${params.outdir}/unicycler/", pattern: "*assembly.fasta", mode: "copy"
+        publishDir "${params.outdir}/unicycler/", pattern: "*unicycler.log", mode: "copy"
+	publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*assembly.fasta", mode: "copy"
+
 	tag "$plasmid.baseName"
 	label 'heavy'
 
         input:
-        tuple plasmid, file(R1), file(R2) from mappedReads_ch
+        tuple file(plasmid), file(R1), file(R2) from mappedReads_ch
 
         output:
         file("*")
