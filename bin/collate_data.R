@@ -3,6 +3,7 @@
 library(dplyr)
 library(impoRt)
 library(funtools)
+library(tidyr)
 
 mobtyper_reports <- get_data(".",
                              pattern = "mobtyper",
@@ -10,6 +11,16 @@ mobtyper_reports <- get_data(".",
   mutate(ref = sub("_mobtyper", "", ref),
          ref = sub(".fasta_report.txt", "", ref)) %>%
   select(-file_id)
+
+prokka_reports <- get_data(".",
+                           pattern = "prokka_report",
+                           convert = TRUE) %>%
+  mutate(ref = sub("prokka_report_", "", ref),
+         ref = sub(".txt", "", ref)) %>%
+  rename("val" = `organism: Genus species strain `) %>%
+  separate(val, c("key", "value"), ":") %>%
+  spread(key, value) %>%
+  select(ref, CDS, gene, tRNA)
 
 plasmidfinder_reports <- get_data(".",
                                   pattern = "plasfinder",
@@ -41,7 +52,8 @@ virfinder_reports <- get_data(".",
   rename("vf_gene" = `Virulence factor`,
          "vf_gene_identity" = Identity)
 
-total_data <- mobtyper_reports %>%
+total_data <- prokka_reports %>%
+  left_join(mobtyper_reports, by = "ref") %>%
   left_join(plasmidfinder_reports, by = "ref") %>%
   left_join(resfinder_reports, by = "ref") %>%
   left_join(virfinder_reports, by = "ref")
