@@ -103,7 +103,6 @@ process RESFINDER {
         
 	publishDir "${params.outdir}/resfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.outdir}/resfinder", pattern: "*resfinder.log", mode: "copy"
-	publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*results_tab.tsv", mode: "copy"
 
 	tag "$plasmid.baseName"
 
@@ -125,7 +124,6 @@ process VIRFINDER {
         
 	publishDir "${params.outdir}/virfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.outdir}/virfinder", pattern: "*virfinder.log", mode: "copy"
-	publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*results_tab.tsv", mode: "copy"
 
 	tag "$plasmid.baseName"
 
@@ -147,7 +145,6 @@ process PLASFINDER {
         
 	publishDir "${params.outdir}/plasmidfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.outdir}/plasmidfinder", pattern: "*plasmidfinder.log", mode: "copy"
-	publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*results_tab.tsv", mode: "copy"
 
 	tag "$plasmid.baseName"	
 
@@ -167,18 +164,7 @@ process PLASFINDER {
 process PROKKA {
 	conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
 
-	publishDir "${params.outdir}/prokka", pattern: "*gff", mode: "copy"
-	publishDir "${params.outdir}/prokka", pattern: "*tsv", mode: "copy"
-	publishDir "${params.outdir}/prokka", pattern: "*log", mode: "copy"
-	publishDir "${params.outdir}/prokka", pattern: "*ffn", mode: "copy"
-	publishDir "${params.outdir}/prokka", pattern: "*faa", mode: "copy"
-	publishDir "${params.outdir}/prokka", pattern: "*gbk", mode: "copy"
-	publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*gff", mode: "copy"
-        publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*tsv", mode: "copy"
-        publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*log", mode: "copy"
-        publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*ffn", mode: "copy"
-        publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*faa", mode: "copy"
-        publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*gbk", mode: "copy"
+	publishDir "${params.outdir}/prokka/${plasmid.baseName}", pattern: "*", mode: "copy"
 
 	tag "$plasmid.baseName"
 
@@ -187,9 +173,11 @@ process PROKKA {
 
 	output:
 	file("*")
+	file("*.txt") into R_prokka
 
 	"""
 	prokka --addgenes --compliant --force --prefix $plasmid.baseName --outdir . $plasmid
+	rename '' "prokka_report_" *
 	"""
 }
 
@@ -202,7 +190,6 @@ process BBDUK {
         publishDir "${params.outdir}/bbduk", pattern: "*mapped*", mode: "copy"
         publishDir "${params.outdir}/bbduk", pattern: "*matched*", mode: "copy"
         publishDir "${params.outdir}/bbduk", pattern: "*log", mode: "copy"
-	publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*matched*", mode: "copy"
 
 	tag "$plasmid.baseName"
 	label 'medium'
@@ -227,7 +214,6 @@ process UNICYCLER {
 
 	publishDir "${params.outdir}/unicycler/", pattern: "*assembly.fasta", mode: "copy"
         publishDir "${params.outdir}/unicycler/", pattern: "*unicycler.log", mode: "copy"
-	publishDir "${params.outdir}/collated_results/${plasmid.baseName}", pattern: "*assembly.fasta", mode: "copy"
 
 	tag "$plasmid.baseName"
 	label 'heavy'
@@ -282,6 +268,7 @@ process COLLATE {
 	file("*") from R_res.collect()
 	file("*") from R_vir.collect()
 	file("*") from R_plas.collect()
+	file("*") from R_prokka.collect()
 
 	output:
 	file("*")
