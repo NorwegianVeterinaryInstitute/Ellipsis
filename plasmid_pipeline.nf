@@ -42,21 +42,59 @@ process MOB_RECON {
         tag "$datasetID"
 
         input:
-        set datasetID, file(datasetFile) from assemblyfiles
+        tuple datasetID, file(datasetFile) from assemblyfiles
 
         output:
         file("*")
         tuple datasetID, file("*mobtyper_plasmid*report.txt") into mobreport
         tuple datasetID, file("*plasmid*fasta") into plasmidFasta
+	file("*mobtyper_plasmid*report.txt") into R_mob
 
         errorStrategy 'ignore'
 
+	script:
         """
-        mob_recon --infile ${datasetFile} -c --debug --run_typer --outdir . &> mob_recon.log
-        rename '' "$datasetID"_ *
+        mob_recon --infile $datasetFile -c --debug --run_typer --outdir . &> mob_recon.log
+	rename '' "$datasetID"_ *
         """
 }
+/*
+mobreport.transpose(remainder: true)
+	 .set { mobreport_ch }
 
+process MASH_ACCESSION {
+	
+	input:
+	tuple datasetID, file(report) from mobreport_ch
+
+	output:
+	file("*.acc") into mash_acc
+
+	script:
+	"""
+	get_accession.bash $report
+	"""
+}
+
+mash_acc.map { file -> tuple(file.baseName, file) }
+	.set { mash_acc_ch }
+
+process NCBIMAP {
+	conda "/cluster/projects/nn9305k/src/miniconda/envs/ncbiacc"
+
+	input:
+	tuple plasmid, file(acc) from mash_acc_ch
+
+	output:
+	file("*")
+	
+	script:
+	mash_acc = acc.name
+	"""
+	ncbi-acc-download -m nucleotide -F fasta -p $plasmid $mash_acc
+	"""
+}
+*/
 plasmidFasta.transpose(remainder: true)
             .into{resFasta; virFasta; plasFasta; mapFasta; prokkaFasta}
 
@@ -74,6 +112,7 @@ process RESFINDER {
 
         output:
         file("*")
+	file("*results_tab.tsv") into R_res
 
         """
         python /cluster/projects/nn9305k/src/resfinder/resfinder.py -i $plasmid -o . -x -p /cluster/projects/nn9305k/src/resfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> resfinder.log
@@ -95,6 +134,7 @@ process VIRFINDER {
 
         output:
         file("*")
+	file("*results_tab.tsv") into R_vir
 
         """
         python /cluster/projects/nn9305k/src/virulencefinder/virulencefinder.py -i $plasmid -o . -x -p /cluster/projects/nn9305k/src/virulencefinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> virfinder.log
@@ -116,6 +156,7 @@ process PLASFINDER {
 
         output:
         file("*")
+	file("*results_tab.tsv") into R_plas
 
         """
         python /cluster/projects/nn9305k/src/plasmidfinder/plasmidfinder.py -i $plasmid -o . -x -p /cluster/projects/nn9305k/src/plasmidfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> plasmidfinder.log
@@ -173,6 +214,9 @@ process BBDUK {
         file("*")
         tuple file(plasmid), file("*1_matched*"), file("*2_matched*") into (mappedReads_ch, aribaReads_ch)
 
+	when:
+        !params.complete
+
         """
         bbduk.sh ref=$plasmid in=$R1 in2=$R2 out=${plasmid.baseName}_unmapped.fastq.gz outm1=${plasmid.baseName}_1_matched.fastq.gz outm2=${plasmid.baseName}_2_matched.fastq.gz &> ${plasmid.baseName}_bbduk.log
         """
@@ -227,3 +271,23 @@ process ARIBA_AMR {
 	"""
 }
 */
+
+process COLLATE {
+	module 'R/4.0.0-foss-2020a'
+
+	publishDir "${params.outdir}", pattern: "total_report.txt", mode: "copy"
+
+	input:
+	file("*") from R_mob.collect()
+	file("*") from R_res.collect()
+	file("*") from R_vir.collect()
+	file("*") from R_plas.collect()
+
+	output:
+	file("*")
+
+	"""
+	Rscript $baseDir/bin/collate_data.R
+	"""
+}
+
