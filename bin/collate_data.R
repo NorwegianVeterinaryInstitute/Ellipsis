@@ -19,7 +19,7 @@ prokka_reports <- get_data(".",
   rename("val" = `organism: Genus species strain `) %>%
   separate(val, c("key", "value"), ":") %>%
   spread(key, value) %>%
-  select(ref, CDS, gene, tRNA)
+  select(ref, CDS, gene)
 
 plasmidfinder_reports <- get_data(".",
                                   pattern = "plasfinder",
