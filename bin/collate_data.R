@@ -22,7 +22,8 @@ prokka_reports <- get_data(".",
   select(ref, CDS, gene, tRNA)
 
 plasmidfinder_reports <- get_data(".",
-                                  pattern = "plasfinder") %>%
+                                  pattern = "plasfinder",
+                                  convert = TRUE) %>%
   mutate(ref = sub("_plasfinder_results_tab.tsv", "", ref)) %>%
   group_by(ref) %>%
   summarise_all(list(func_paste)) %>%
