@@ -1,8 +1,11 @@
 #!/bin/bash
+
+# input parameters
+config=$1
+
 # Run nextflow pipeline
 module load Java/11.0.2
 
-cd /cluster/projects/nn9305k/active/hkaspersen/Projects/NEXTFLOW/plasmid_pipeline
-nextflow run plasmid_pipeline.nf -c plasmid_pipeline.config -work-dir ${USERWORK}/pp_work -resume
+nextflow run /cluster/projects/nn9305k/active/hkaspersen/Projects/NEXTFLOW/plasmid_pipeline/plasmid_pipeline.nf -c $config -work-dir ${USERWORK}/pp_work -resume
 
 module unload
