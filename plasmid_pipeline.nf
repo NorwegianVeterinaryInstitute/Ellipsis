@@ -37,7 +37,8 @@ process MOB_RECON {
         publishDir "${params.outdir}/mobsuite/mobtyper_reports", pattern: "*_mobtyper_plasmid_*.fasta_report.txt", mode: "copy"
  	publishDir "${params.outdir}/mobsuite", pattern: "*mob_recon.log", mode: "copy"
 	publishDir "${params.outdir}/mobsuite/repetitive_blast_reports", pattern: "*repetitive_blast_report.txt", mode: "copy"
-	publishDir "${params.outdir}/mobsuite/contig_reports", pattern: "*contig_report.txt", mode: "copy"	
+	publishDir "${params.outdir}/mobsuite/contig_reports", pattern: "*contig_report.txt", mode: "copy"
+	publishDir "${params.outdir}/mobsuite/chromosome_fasta", pattern: "*chromosome.fasta", mode: "copy"	
 
         tag "$datasetID"
 
@@ -58,43 +59,7 @@ process MOB_RECON {
 	rename '' "$datasetID"_ *
         """
 }
-/*
-mobreport.transpose(remainder: true)
-	 .set { mobreport_ch }
 
-process MASH_ACCESSION {
-	
-	input:
-	tuple datasetID, file(report) from mobreport_ch
-
-	output:
-	file("*.acc") into mash_acc
-
-	script:
-	"""
-	get_accession.bash $report
-	"""
-}
-
-mash_acc.map { file -> tuple(file.baseName, file) }
-	.set { mash_acc_ch }
-
-process NCBIMAP {
-	conda "/cluster/projects/nn9305k/src/miniconda/envs/ncbiacc"
-
-	input:
-	tuple plasmid, file(acc) from mash_acc_ch
-
-	output:
-	file("*")
-	
-	script:
-	mash_acc = acc.name
-	"""
-	ncbi-acc-download -m nucleotide -F fasta -p $plasmid $mash_acc
-	"""
-}
-*/
 plasmidFasta.transpose(remainder: true)
             .into{resFasta; virFasta; plasFasta; mapFasta; prokkaFasta}
 
@@ -233,31 +198,6 @@ process UNICYCLER {
         """
 }
 
-/*
-process ARIBA_AMR {
-	conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
-
-	publishDir "${params.outdir}/ariba/amr", pattern: "*report.tsv", mode: "copy"
-	publishDir "${params.outdir}/ariba/amr", pattern: "*ariba.log", mode: "copy"
-
-	tag "$plasmid.baseName"
-
-	input:
-	tuple plasmid, file(R1), file(R2) from aribaReads_ch
-	val "db" from amrDB_ch
-
-	output:
-	file("*")
-	tuple $plasmid.baseName, file("*_report.tsv") into collateAribaAmr
-
-	"""
-	ariba run --threads $task.cpus --assembly_cov 200 --assembler spades --spades_mode wgs --verbose $db $R1 $R2 ${plasmid.baseName}_ariba &> ariba.log
-	cp ${plasmid.baseName}_ariba/report.tsv .
-	rename '' "$plasmid.baseName"_ *
-	"""
-}
-*/
-
 process COLLATE {
 	module 'R/4.0.0-foss-2020a'
 
@@ -277,4 +217,5 @@ process COLLATE {
 	Rscript $baseDir/bin/collate_data.R
 	"""
 }
+
 
