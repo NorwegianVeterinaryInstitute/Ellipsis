@@ -49,6 +49,7 @@ process MOB_RECON {
         file("*")
         tuple datasetID, file("*mobtyper_plasmid*report.txt") into mobreport
         tuple datasetID, file("*plasmid*fasta") into plasmidFasta
+	tuple datasetID, file("*.fasta") into allFasta
 	file("*mobtyper_plasmid*report.txt") into R_mob
 
         errorStrategy 'ignore'
@@ -61,7 +62,10 @@ process MOB_RECON {
 }
 
 plasmidFasta.transpose(remainder: true)
-            .into{resFasta; virFasta; plasFasta; mapFasta; prokkaFasta}
+            .into{mapFasta}
+
+allFasta.transpose(remainder: true)
+	.into{resFasta; virFasta; plasFasta; prokkaFasta}
 
 process RESFINDER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
@@ -100,7 +104,7 @@ process VIRFINDER {
 	file("*results_tab.tsv") into R_vir
 
         """
-        python /cluster/projects/nn9305k/src/virulencefinder/virulencefinder.py -i $plasmid -o . -x -p /cluster/projects/nn9305k/src/virulencefinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> virfinder.log
+        python /cluster/projects/nn9305k/src/virulencefinder/virulencefinder.py -i $plasmid -o . -x -p $params.vfdb -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> virfinder.log
         rename '' "$plasmid.baseName"_"virfinder"_ *
         """
 }
@@ -141,7 +145,7 @@ process PROKKA {
 	file("*.txt") into R_prokka
 
 	"""
-	prokka --addgenes --compliant --force --prefix $plasmid.baseName --outdir . $plasmid
+	prokka --addgenes --compliant --force --cpus $task.cpus --prefix $plasmid.baseName --outdir . $plasmid
 	rename '' "prokka_report_" *
 	"""
 }
