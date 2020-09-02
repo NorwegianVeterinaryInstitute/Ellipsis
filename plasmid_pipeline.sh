@@ -11,5 +11,5 @@ cp ${script_directory}/main.nf ${outdir}/config_files
 cp ${config} ${outdir}/config_files
 
 module load Java/11.0.2
-nextflow run /cluster/projects/nn9305k/active/hkaspersen/Projects/NEXTFLOW/plasmid_pipeline/main_new.nf -c ${config} --out_dir=${outdir} -work-dir ${workdir} -resume
+nextflow run ${script_directory}/main.nf -c ${config} --out_dir=${outdir} -work-dir ${workdir} -resume
 module unload Java/11.0.2
