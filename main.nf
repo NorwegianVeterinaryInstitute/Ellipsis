@@ -1,8 +1,15 @@
-log.info "================================================="
-log.info " Plasmid Reconstruction and Improvement Pipeline"
-log.info "================================================="
-log.info "================================================="
-log.info ""
+log.info "=================================================="
+log.info "=================================================="
+log.info "                                                  "
+log.info "****                 ELLIPSIS                 ****"
+log.info "                                                  "
+log.info "****            Plasmid annotation            ****"
+log.info "****         and improvement pipeline         ****"
+log.info "                                                  "
+log.info "=================================================="
+log.info "=================================================="
+log.info "Run: $params.run                                  "
+log.info "=================================================="
 
 nextflow.enable.dsl=2
 
