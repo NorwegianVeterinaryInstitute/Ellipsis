@@ -1,7 +1,8 @@
-# Plasmid Pipeline
-This is the repository for the plasmid pipeline, currently under development.
+# Ellipsis
+## Plasmid identification, annotation, and typing pipeline
 
-Please contact Håkon Kaspersen for more information.
+![Ellipsis pipeline](pipeline.png)
+
 
 Håkon Kaspersen,
-15.07.2020
+08.09.2020
