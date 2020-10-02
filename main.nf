@@ -222,12 +222,13 @@ process REPORT {
 
         input:
         file("*")
+	val(run_ariba)
 
         output:
         file("*")
 
         """
-        Rscript $baseDir/bin/collate_data.R
+        Rscript $baseDir/bin/collate_data.R $run_ariba
         """
 }
 
@@ -271,8 +272,12 @@ workflow ELLIPSIS_ASSEMBLY {
 		.mix(QUAST.out.R_quast)
                 .collect()
                 .set { report_ch }
+	
+	Channel
+		.value("true")
+		.set { run_ariba_report }
 
-        REPORT(report_ch)
+        REPORT(report_ch, run_ariba_report)
 }
 
 workflow ELLIPSIS_ANNOTATE {
@@ -298,7 +303,6 @@ workflow ELLIPSIS_ANNOTATE {
         PLASFINDER(fasta_ch)
         PROKKA(fasta_ch)
 
-/*
         RESFINDER.out.R_res.collect()
                 .mix(VIRFINDER.out.R_vir)
                 .mix(PLASFINDER.out.R_plas)
@@ -307,7 +311,11 @@ workflow ELLIPSIS_ANNOTATE {
                 .collect()
                 .set { report_ch }
 
-        REPORT(report_ch) */
+	Channel
+                .value("false")
+                .set { run_ariba_report }
+
+        REPORT(report_ch)
 }
 
 
