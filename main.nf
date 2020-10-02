@@ -126,7 +126,7 @@ process PROKKA {
         path "*.txt", emit: R_prokka
 
         """
-        prokka --addgenes --compliant --force --cpus $task.cpus --prefix $fasta.baseName --outdir . $fasta
+        prokka --addgenes --compliant --force --cpus $task.cpus --prefix $fasta.baseName --outdir . $params.prokka_additional $fasta
         rename '' "prokka_report_" *
         """
 }
