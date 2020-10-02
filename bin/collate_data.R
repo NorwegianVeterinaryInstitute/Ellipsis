@@ -4,6 +4,11 @@ library(dplyr)
 library(impoRt)
 library(funtools)
 library(tidyr)
+library(readr)
+library(vampfunc)
+
+args <- commandArgs(trailingOnly = TRUE)
+run_ariba <- args[1]
 
 # import data
 mobtyper_reports <- get_data(".",
@@ -81,25 +86,54 @@ virfinder_reports <- get_data(".",
          "vf_gene_identity" = Identity,
          "vf_contig" = Contig)
 
-# summarise and merge data
-summary_report <- mobtyper_reports %>%
-  left_join(prokka_reports, by = c("ref", "element")) %>%
-  mutate(
-    total_length = as.numeric(total_length),
-    num_contigs = as.numeric(num_contigs),
-    gene = as.numeric(gene)
-  ) %>%
-  group_by(ref) %>%
-  mutate(
-    n_plasmids = length(element),
-    size_range = paste(min(total_length), " - ", max(total_length)),
-    contig_range = paste(min(num_contigs), " - ", max(num_contigs)),
-    gene_range = paste(min(gene), " - ", max(gene))
-  ) %>%
-  select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
-  summarise_all(list(func_paste)) %>%
-  rename("sample" = ref)
+if (run_ariba == "true") {
+  ariba_report <- get_data(".",
+                           pattern = "ariba",
+                           convert = TRUE) %>%
+    fix_gene_names("_ariba_report.tsv", db = "res") %>%
+    create_table() %>%
+    create_report() %>%
+    rename("sample" = ref)
+  
+  summary_report <- mobtyper_reports %>%
+    left_join(prokka_reports, by = c("ref", "element")) %>%
+    mutate(
+      total_length = as.numeric(total_length),
+      num_contigs = as.numeric(num_contigs),
+      gene = as.numeric(gene)
+    ) %>%
+    group_by(ref) %>%
+    mutate(
+      n_plasmids = length(element),
+      size_range = paste(min(total_length), " - ", max(total_length)),
+      contig_range = paste(min(num_contigs), " - ", max(num_contigs)),
+      gene_range = paste(min(gene), " - ", max(gene))
+    ) %>%
+    select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
+    summarise_all(list(func_paste)) %>%
+    rename("sample" = ref) %>%
+    left_join(ariba_report, by = "sample")
+} else {
+  summary_report <- mobtyper_reports %>%
+    left_join(prokka_reports, by = c("ref", "element")) %>%
+    mutate(
+      total_length = as.numeric(total_length),
+      num_contigs = as.numeric(num_contigs),
+      gene = as.numeric(gene)
+    ) %>%
+    group_by(ref) %>%
+    mutate(
+      n_plasmids = length(element),
+      size_range = paste(min(total_length), " - ", max(total_length)),
+      contig_range = paste(min(num_contigs), " - ", max(num_contigs)),
+      gene_range = paste(min(gene), " - ", max(gene))
+    ) %>%
+    select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
+    summarise_all(list(func_paste)) %>%
+    rename("sample" = ref)
+}
 
+# summarise and merge data
 res_truncated <- resfinder_reports %>%
   select(ref, element, rf_gene) %>%
   group_by(ref, element) %>%
