@@ -87,10 +87,18 @@ virfinder_reports <- get_data(".",
          "vf_contig" = Contig)
 
 if (run_ariba == "true") {
-  ariba_report <- get_data(".",
-                           pattern = "ariba",
+  ariba_res_report <- get_data(".",
+                           pattern = "ariba_resfinder",
                            convert = TRUE) %>%
-    fix_gene_names("_ariba_report.tsv", db = "res") %>%
+    fix_gene_names("_ariba_resfinder_report.tsv", db = "res") %>%
+    create_table() %>%
+    create_report() %>%
+    rename("sample" = ref)
+  
+  ariba_vir_report <- get_data(".",
+                           pattern = "ariba_virulence",
+                           convert = TRUE) %>%
+    fix_gene_names("_ariba_virulence_report.tsv", db = "res") %>%
     create_table() %>%
     create_report() %>%
     rename("sample" = ref)
@@ -112,7 +120,8 @@ if (run_ariba == "true") {
     select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
     summarise_all(list(func_paste)) %>%
     rename("sample" = ref) %>%
-    left_join(ariba_report, by = "sample")
+    left_join(ariba_res_report, by = "sample") %>%
+    left_join(ariba_vir_report, by = "sample")
 } else {
   summary_report <- mobtyper_reports %>%
     left_join(prokka_reports, by = c("ref", "element")) %>%
