@@ -12,6 +12,71 @@ log.info "=================================================="
 nextflow.enable.dsl=2
 
 // Workflows
+workflow ELLIPSIS_HYBRID {
+	// Set channels
+	Channel
+                .fromFilePairs(params.reads, flat: true,  checkIfExists: true)
+                .set { readfiles_ch }
+
+	Channel
+		.fromPath(params.longreads, checkIfExists: true)
+		.set { longreads_ch }
+
+	aribaresdb = Channel
+                .value(params.ariba_resdb)
+
+        aribavirdb = Channel
+                .value(params.ariba_virdb)
+
+	ARIBA_RES(readfiles_ch, aribaresdb)
+        ARIBA_VIR(readfiles_ch, aribavirdb)
+
+	if ($params.sequencer="nanopore") {
+	CANU_NANOPORE(longreads_ch)
+	}
+	if ($params.sequencer="pacbio") {
+	CANU_PACBIO(longreads_ch)
+	}
+
+	FILTLONG()
+	UNICYCLER_HYBRID()
+	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())
+        
+	MOB_RECON(UNICYCLER_HYBRID.out.new_assemblies)
+
+        if (!params.chrom) {
+                MOB_RECON.out.plasmidFasta.transpose(remainder: true)
+                        .set { fasta_ch }
+        }
+        if (params.chrom) {
+                MOB_RECON.out.plasmidFasta.transpose(remainder: true)
+                        .mix(MOB_RECON.out.chromFasta.transpose(remainder: true))
+                        .set { fasta_ch }
+        }
+
+        RESFINDER(fasta_ch)
+        VIRFINDER(fasta_ch)
+        PLASFINDER(fasta_ch)
+        PROKKA(fasta_ch)
+
+        RESFINDER.out.R_res.collect()
+                .mix(VIRFINDER.out.R_vir)
+                .mix(PLASFINDER.out.R_plas)
+                .mix(PROKKA.out.R_prokka)
+                .mix(MOB_RECON.out.R_mob)
+                .mix(ARIBA_RES.out.R_aribares)
+                .mix(ARIBA_VIR.out.R_aribavir)
+                .mix(QUAST.out.R_quast)
+                .collect()
+                .set { report_ch }
+
+        Channel
+                .value("true")
+                .set { run_ariba_report }
+
+        REPORT(report_ch, run_ariba_report)
+}
+
 
 workflow ELLIPSIS_ASSEMBLY {
 	Channel
@@ -105,7 +170,22 @@ workflow ELLIPSIS_ANNOTATE {
 
 
 workflow {
-if (params.assemble) {
+if (params.track="hybrid") {
+	include { CANU } from "${params.module_dir}/CANU.nf"
+	include { FILTLONG } from "${params.module_dir}/FILTLONG.nf"
+	include { UNICYCLER_HYBRID } from "${params.module_dir}/UNICYCLER.nf"
+        include { QUAST } from "${params.module_dir}/QUAST.nf"
+        include { MOB_RECON } from "${params.module_dir}/MOBSUITE.nf"
+        include { RESFINDER } from "${params.module_dir}/RESFINDER.nf"
+        include { VIRFINDER } from "${params.module_dir}/VIRFINDER.nf"
+        include { PLASFINDER } from "${params.module_dir}/PLASFINDER.nf"
+        include { PROKKA } from "${params.module_dir}/PROKKA.nf"
+        include { REPORT } from "${params.module_dir}/REPORT.nf"
+
+	ELLIPSIS_HYBRID()
+}
+
+if (params.track="short_assembly") {
 	include { ARIBA_RES;ARIBA_VIR } from "${params.module_dir}/ARIBA.nf"
 	include { TRIM } from "${params.module_dir}/TRIM.nf"
 	include { UNICYCLER } from "${params.module_dir}/UNICYCLER.nf"
@@ -120,7 +200,7 @@ if (params.assemble) {
 	ELLIPSIS_ASSEMBLY()
 	}
 
-if (!params.assemble) {
+if (params.track="no_assembly") {
         include { MOB_RECON } from "${params.module_dir}/MOBSUITE.nf"
         include { RESFINDER } from "${params.module_dir}/RESFINDER.nf"
         include { VIRFINDER } from "${params.module_dir}/VIRFINDER.nf"
