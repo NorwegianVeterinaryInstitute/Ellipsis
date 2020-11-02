@@ -11,248 +11,6 @@ log.info "=================================================="
 
 nextflow.enable.dsl=2
 
-// Processes
-
-process MOB_RECON {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/Mobsuite"
-
-        publishDir "${params.out_dir}/mobsuite/plasmid_fasta", pattern: "*plasmid*fasta", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite/mobtyper_reports", pattern: "*_mobtyper_plasmid_*.fasta_report.txt", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite", pattern: "*mob_recon.log", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite/repetitive_blast_reports", pattern: "*repetitive_blast_report.txt", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite/contig_reports", pattern: "*contig_report.txt", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite/chromosome_fasta", pattern: "*chromosome.fasta", mode: "copy"
-
-        tag "$datasetID"
-
-        input:
-        tuple val(datasetID), file(assembly)
-
-        output:
-        file("*")
-        tuple val(datasetID), file("*mobtyper_plasmid*report.txt"), emit: mobreport
-        tuple val(datasetID), file("*plasmid*fasta"), emit: plasmidFasta
-        tuple val(datasetID), file("*chromosome.fasta"), emit: chromFasta
-        path "*mobtyper_plasmid*report.txt", emit: R_mob
-
-        errorStrategy 'ignore'
-
-        script:
-        """
-        mob_recon --infile $assembly -c --debug --run_typer --outdir . &> mob_recon.log
-        rename '' "$datasetID"_ *
-        """
-}
-
-process RESFINDER {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
-
-        publishDir "${params.out_dir}/resfinder", pattern: "*results_tab.tsv", mode: "copy"
-        publishDir "${params.out_dir}/resfinder", pattern: "*resfinder.log", mode: "copy"
-
-        tag "$fasta.baseName"
-
-        input:
-        tuple val(datasetID), file(fasta)
-
-        output:
-        file("*")
-        path "*results_tab.tsv", emit: R_res
-
-        """
-        python /cluster/projects/nn9305k/src/resfinder/resfinder.py -i $fasta -o . -x -p $params.resfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> resfinder.log
-        rename '' "$fasta.baseName"_"resfinder"_ *
-        """
-}
-
-process VIRFINDER {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
-
-        publishDir "${params.out_dir}/virfinder", pattern: "*results_tab.tsv", mode: "copy"
-        publishDir "${params.out_dir}/virfinder", pattern: "*virfinder.log", mode: "copy"
-
-        tag "$fasta.baseName"
-
-        input:
-        tuple val(datasetID), file(fasta)
-
-        output:
-        file("*")
-        path "*results_tab.tsv", emit: R_vir
-
-        """
-        python /cluster/projects/nn9305k/src/virulencefinder/virulencefinder.py -i $fasta -o . -x -p $params.virfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> virfinder.log
-        rename '' "$fasta.baseName"_"virfinder"_ *
-        """
-}
-
-
-process PLASFINDER {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
-
-        publishDir "${params.out_dir}/plasmidfinder", pattern: "*results_tab.tsv", mode: "copy"
-        publishDir "${params.out_dir}/plasmidfinder", pattern: "*plasmidfinder.log", mode: "copy"
-
-        tag "$fasta.baseName"
-
-        input:
-        tuple val(datasetID), file(fasta)
-
-        output:
-        file("*")
-        path "*results_tab.tsv", emit: R_plas
-
-        """
-        python /cluster/projects/nn9305k/src/plasmidfinder/plasmidfinder.py -i $fasta -o . -x -p $params.plasfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> plasmidfinder.log
-        rename '' "$fasta.baseName"_"plasfinder"_ *
-        """
-}
-
-
-process PROKKA {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
-
-        publishDir "${params.out_dir}/prokka/${fasta.baseName}", pattern: "*", mode: "copy"
-
-        tag "$fasta.baseName"
-
-        input:
-        tuple val(datasetID), file(fasta)
-
-        output:
-        file("*")
-        path "*.txt", emit: R_prokka
-
-        """
-        prokka --addgenes --compliant --force --cpus $task.cpus --prefix $fasta.baseName --outdir . $params.prokka_additional $fasta
-        rename '' "prokka_report_" *
-        """
-}
-
-
-process ARIBA_RES {
-	conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
-	
-	publishDir "${params.out_dir}/ariba", pattern: "*ariba_resfinder_report.tsv", mode: "copy"
-	publishDir "${params.out_dir}/ariba", pattern: "*_ariba_res.log", mode: "copy"
-
-	input:
-	tuple val(datasetID), file(R1), file(R2)
-	path amrdb
-
-	output:
-	file("*")
-	path "*ariba_resfinder_report.tsv", emit: R_aribares
-
-	script:
-	"""
-	ariba run --threads $task.cpus $amrdb $R1 $R2 results &> ${datasetID}_ariba_res.log
-	cp results/report.tsv ${datasetID}_ariba_resfinder_report.tsv
-	"""
-}
-
-process ARIBA_VIR {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
-
-        publishDir "${params.out_dir}/ariba", pattern: "*ariba_virulence_report.tsv", mode: "copy"
-        publishDir "${params.out_dir}/ariba", pattern: "*_ariba_vir.log", mode: "copy"
-
-        input:
-        tuple val(datasetID), file(R1), file(R2)
-        path virdb
-
-        output:
-        file("*")
-        path "*ariba_virulence_report.tsv", emit: R_aribavir
-
-        script:
-        """
-        ariba run --threads $task.cpus $virdb $R1 $R2 results &> ${datasetID}_ariba_vir.log
-        cp results/report.tsv ${datasetID}_ariba_virulence_report.tsv
-        """
-}
-
-
-process TRIM {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/Trimgalore"
-
-        input:
-        tuple val(datasetID), file(R1), file(R2)
-
-        output:
-        file("*")
-	tuple val(datasetID), path {"*val_1.fq.gz"}, path {"*val_2.fq.gz"}, emit: trim_reads 
-
-	script:
-        """
-	trim_galore -o . --paired -trim1 $R1 $R2 &> ${datasetID}_trimgalore.log
-        """
-}
-
-
-process UNICYCLER {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/unicycler"
-
-        publishDir "${params.out_dir}/unicycler/", pattern: "*assembly.fasta", mode: "copy"
-        publishDir "${params.out_dir}/unicycler/", pattern: "*unicycler.log", mode: "copy"
-
-        tag "$datasetID"
-        label 'heavy'
-
-        input:
-        tuple val(datasetID), file(R1), file(R2)
-
-        output:
-        file("*")
-	tuple val(datasetID), path {"*_assembly.fasta"}, emit: new_assemblies
-	path "*_assembly.fasta", emit: quast_ch
-
-        """
-        unicycler -1 $R1 -2 $R2 -o . --verbosity 2 --keep 2 --mode $params.mode --threads $task.cpus
-        rename '' "$datasetID"_ *
-        """
-}
-
-
-process QUAST {
-	conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
-
-	publishDir "${params.out_dir}/reports/", pattern: "transposed_report.tsv", mode: "copy", saveAs: {"quast_report.tsv"}
-
-	input:
-	file("*")
-
-	output:
-	file("*")
-	path "transposed_report.tsv", emit: R_quast
-
-	script:
-	"""
-	quast --threads $task.cpus -o . *.fasta
-	"""
-}
-
-process REPORT {
-        module 'R/4.0.0-foss-2020a'
-
-        publishDir "${params.out_dir}/reports", pattern: "total_report.txt", mode: "copy"
-	publishDir "${params.out_dir}/reports", pattern: "summary_report.txt", mode: "copy"
-	publishDir "${params.out_dir}/reports", pattern: "resfinder_report.txt", mode: "copy"
-	publishDir "${params.out_dir}/reports", pattern: "virfinder_report.txt", mode: "copy"
-	publishDir "${params.out_dir}/reports", pattern: "plasmidfinder_report.txt", mode: "copy"
-
-        input:
-        file("*")
-	val(run_ariba)
-
-        output:
-        file("*")
-
-        """
-        Rscript $baseDir/bin/collate_data.R $run_ariba
-        """
-}
-
 // Workflows
 
 workflow ELLIPSIS_ASSEMBLY {
@@ -348,10 +106,28 @@ workflow ELLIPSIS_ANNOTATE {
 
 workflow {
 if (params.assemble) {
+	include { ARIBA_RES;ARIBA_VIR } from "${params.module_dir}/ARIBA.nf"
+	include { TRIM } from "${params.module_dir}/TRIM.nf"
+	include { UNICYCLER } from "${params.module_dir}/UNICYCLER.nf"
+	include { QUAST } from "${params.module_dir}/QUAST.nf"
+	include { MOB_RECON } from "${params.module_dir}/MOBSUITE.nf"
+	include { RESFINDER } from "${params.module_dir}/RESFINDER.nf"
+	include { VIRFINDER } from "${params.module_dir}/VIRFINDER.nf"
+	include { PLASFINDER } from "${params.module_dir}/PLASFINDER.nf"
+	include { PROKKA } from "${params.module_dir}/PROKKA.nf"
+	include { REPORT } from "${params.module_dir}/REPORT.nf"
+
 	ELLIPSIS_ASSEMBLY()
 	}
 
 if (!params.assemble) {
+        include { MOB_RECON } from "${params.module_dir}/MOBSUITE.nf"
+        include { RESFINDER } from "${params.module_dir}/RESFINDER.nf"
+        include { VIRFINDER } from "${params.module_dir}/VIRFINDER.nf"
+        include { PLASFINDER } from "${params.module_dir}/PLASFINDER.nf"
+        include { PROKKA } from "${params.module_dir}/PROKKA.nf"
+        include { REPORT } from "${params.module_dir}/REPORT.nf"
+
 	ELLIPSIS_ANNOTATE()
 	}
 }
