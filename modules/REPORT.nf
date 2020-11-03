@@ -19,3 +19,19 @@ process REPORT {
         """
 }
 
+process REPORT_PLASMAP {
+        module 'R/4.0.0-foss-2020a'
+
+        publishDir "${params.out_dir}/plasmap", pattern: "plasmid_mapping_report.txt", mode: "copy"
+
+        input:
+        file("*")
+
+        output:
+        file("*")
+
+        """
+        Rscript $baseDir/bin/collate_plasmap.R
+        """
+}
+
