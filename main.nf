@@ -14,13 +14,13 @@ nextflow.enable.dsl=2
 // Workflows
 /*
 workflow ELLIPSIS_HYBRID {
-	// Set channels
 	Channel
                 .fromFilePairs(params.reads, flat: true,  checkIfExists: true)
                 .set { readfiles_ch }
 
 	Channel
 		.fromPath(params.longreads, checkIfExists: true)
+		.map { file -> tuple(file.baseName, file) }
 		.set { longreads_ch }
 
 	aribaresdb = Channel
@@ -32,18 +32,16 @@ workflow ELLIPSIS_HYBRID {
 	ARIBA_RES(readfiles_ch, aribaresdb)
         ARIBA_VIR(readfiles_ch, aribavirdb)
 
-
 	if (params.sequencer == "nanopore") {
-	CANU_NANOPORE(longreads_ch)
+		CANU_NANOPORE(longreads_ch)
 	}
 	if (params.sequencer == "pacbio") {
-	CANU_PACBIO(longreads_ch)
+		CANU_PACBIO(longreads_ch)
 	}
 
 	FILTLONG()
 	UNICYCLER_HYBRID()
-	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())
-        
+	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())        
 	MOB_RECON(UNICYCLER_HYBRID.out.new_assemblies)
 
         if (!params.chrom) {
