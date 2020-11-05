@@ -172,7 +172,7 @@ workflow ELLIPSIS_ANNOTATE {
 
 
 workflow {
-if (params.track="hybrid") {
+if (params.track == "hybrid") {
 	include { CANU } from "${params.module_dir}/CANU.nf"
 	include { FILTLONG } from "${params.module_dir}/FILTLONG.nf"
 	include { UNICYCLER_HYBRID } from "${params.module_dir}/UNICYCLER.nf"
@@ -187,7 +187,7 @@ if (params.track="hybrid") {
 	ELLIPSIS_HYBRID()
 }
 
-if (params.track="short_assembly") {
+if (params.track == "short_assembly") {
 	include { ARIBA_RES;ARIBA_VIR } from "${params.module_dir}/ARIBA.nf"
 	include { TRIM } from "${params.module_dir}/TRIM.nf"
 	include { UNICYCLER } from "${params.module_dir}/UNICYCLER.nf"
@@ -202,7 +202,7 @@ if (params.track="short_assembly") {
 	ELLIPSIS_ASSEMBLY()
 	}
 
-if (params.track="no_assembly") {
+if (params.track == "no_assembly") {
         include { MOB_RECON } from "${params.module_dir}/MOBSUITE.nf"
         include { RESFINDER } from "${params.module_dir}/RESFINDER.nf"
         include { VIRFINDER } from "${params.module_dir}/VIRFINDER.nf"
