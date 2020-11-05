@@ -33,10 +33,10 @@ workflow ELLIPSIS_HYBRID {
         ARIBA_VIR(readfiles_ch, aribavirdb)
 
 
-	if ($params.sequencer="nanopore") {
+	if (params.sequencer == "nanopore") {
 	CANU_NANOPORE(longreads_ch)
 	}
-	if ($params.sequencer="pacbio") {
+	if (params.sequencer == "pacbio") {
 	CANU_PACBIO(longreads_ch)
 	}
 
