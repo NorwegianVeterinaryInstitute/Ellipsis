@@ -12,6 +12,7 @@ log.info "=================================================="
 nextflow.enable.dsl=2
 
 // Workflows
+/*
 workflow ELLIPSIS_HYBRID {
 	// Set channels
 	Channel
@@ -30,6 +31,7 @@ workflow ELLIPSIS_HYBRID {
 
 	ARIBA_RES(readfiles_ch, aribaresdb)
         ARIBA_VIR(readfiles_ch, aribavirdb)
+
 
 	if ($params.sequencer="nanopore") {
 	CANU_NANOPORE(longreads_ch)
@@ -76,7 +78,7 @@ workflow ELLIPSIS_HYBRID {
 
         REPORT(report_ch, run_ariba_report)
 }
-
+*/
 
 workflow ELLIPSIS_ASSEMBLY {
 	Channel
