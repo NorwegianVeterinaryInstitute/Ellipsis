@@ -12,7 +12,7 @@ log.info "=================================================="
 nextflow.enable.dsl=2
 
 // Workflows
-/*
+
 workflow ELLIPSIS_HYBRID {
 	Channel
                 .fromFilePairs(params.reads, flat: true,  checkIfExists: true)
@@ -23,6 +23,10 @@ workflow ELLIPSIS_HYBRID {
 		.map { file -> tuple(file.baseName, file) }
 		.set { longreads_ch }
 
+
+/*
+	FASTQC(readfiles_ch)
+
 	aribaresdb = Channel
                 .value(params.ariba_resdb)
 
@@ -31,14 +35,23 @@ workflow ELLIPSIS_HYBRID {
 
 	ARIBA_RES(readfiles_ch, aribaresdb)
         ARIBA_VIR(readfiles_ch, aribavirdb)
-
+*/
 	if (params.sequencer == "nanopore") {
 		CANU_NANOPORE(longreads_ch)
-	}
-	if (params.sequencer == "pacbio") {
-		CANU_PACBIO(longreads_ch)
+		
+		readfiles_ch.join(CANU_NANOPORE.out.canu_output, by: 0)
+			.view()
 	}
 
+	if (params.sequencer == "pacbio") {
+		CANU_PACBIO(longreads_ch)
+
+	readfiles_ch
+                .join(CANU_PACBIO.out.canu_output)
+                .view()
+	}
+
+/*
 	FILTLONG()
 	UNICYCLER_HYBRID()
 	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())        
@@ -75,8 +88,8 @@ workflow ELLIPSIS_HYBRID {
                 .set { run_ariba_report }
 
         REPORT(report_ch, run_ariba_report)
-}
 */
+}
 
 workflow ELLIPSIS_ASSEMBLY {
 	Channel
@@ -171,7 +184,9 @@ workflow ELLIPSIS_ANNOTATE {
 
 workflow {
 if (params.track == "hybrid") {
-	include { CANU } from "${params.module_dir}/CANU.nf"
+	include { FASTQC } from "${params.module_dir}/FASTQC.nf"
+	include { CANU_NANOPORE } from "${params.module_dir}/CANU.nf"
+	include { CANU_PACBIO } from "${params.module_dir}/CANU.nf"
 	include { FILTLONG } from "${params.module_dir}/FILTLONG.nf"
 	include { UNICYCLER_HYBRID } from "${params.module_dir}/UNICYCLER.nf"
         include { QUAST } from "${params.module_dir}/QUAST.nf"
