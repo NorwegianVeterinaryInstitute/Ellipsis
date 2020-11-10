@@ -1,8 +1,6 @@
 process FILTLONG {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/Filtlong"
 
-        publishDir "${params.out_dir}/", pattern: "", mode: "copy"
-        publishDir "${params.out_dir}/", pattern: "", mode: "copy"
 
         tag "$datasetID"
         label 'heavy'
