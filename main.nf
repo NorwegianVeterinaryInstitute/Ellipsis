@@ -14,6 +14,7 @@ nextflow.enable.dsl=2
 // Workflows
 
 workflow ELLIPSIS_HYBRID {
+	// Set channels
 	Channel
                 .fromFilePairs(params.reads, flat: true,  checkIfExists: true)
                 .set { readfiles_ch }
@@ -23,24 +24,22 @@ workflow ELLIPSIS_HYBRID {
 		.map { file -> tuple(file.simpleName, file) }
 		.set { longreads_ch }
 
-
-	FASTQC(readfiles_ch)
-/*
 	aribaresdb = Channel
                 .value(params.ariba_resdb)
 
         aribavirdb = Channel
                 .value(params.ariba_virdb)
 
-	ARIBA_RES(readfiles_ch, aribaresdb)
-        ARIBA_VIR(readfiles_ch, aribavirdb)
+	// Run QC
+	FASTQC(readfiles_ch)
 
-*/
+	// Hybrid assembly
 	if (params.sequencer == "nanopore") {
 		CANU_NANOPORE(longreads_ch)
 		
-		readfiles_ch.join(CANU_NANOPORE.out.canu_output, by: 0)
-			.view()
+		readfiles_ch
+			.join(CANU_NANOPORE.out.canu_output, by: 0)
+			.set { longshort_ch }
 	}
 
 	if (params.sequencer == "pacbio") {
@@ -48,13 +47,15 @@ workflow ELLIPSIS_HYBRID {
 
 		readfiles_ch
                 	.join(CANU_PACBIO.out.canu_output, by: 0)
-                	.view()
+                	.set { longshort_ch }
 	}
 
+	FILTLONG(longshort_ch)
 /*
-	FILTLONG()
 	UNICYCLER_HYBRID()
 	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())        
+
+	// Plasmid analyses
 	MOB_RECON(UNICYCLER_HYBRID.out.new_assemblies)
 
         if (!params.chrom) {
@@ -67,6 +68,8 @@ workflow ELLIPSIS_HYBRID {
                         .set { fasta_ch }
         }
 
+        ARIBA_RES(readfiles_ch, aribaresdb)
+        ARIBA_VIR(readfiles_ch, aribavirdb)
         RESFINDER(fasta_ch)
         VIRFINDER(fasta_ch)
         PLASFINDER(fasta_ch)
