@@ -20,13 +20,12 @@ workflow ELLIPSIS_HYBRID {
 
 	Channel
 		.fromPath(params.longreads, checkIfExists: true)
-		.map { file -> tuple(file.baseName, file) }
+		.map { file -> tuple(file.simpleName, file) }
 		.set { longreads_ch }
 
 
-/*
 	FASTQC(readfiles_ch)
-
+/*
 	aribaresdb = Channel
                 .value(params.ariba_resdb)
 
@@ -35,6 +34,7 @@ workflow ELLIPSIS_HYBRID {
 
 	ARIBA_RES(readfiles_ch, aribaresdb)
         ARIBA_VIR(readfiles_ch, aribavirdb)
+
 */
 	if (params.sequencer == "nanopore") {
 		CANU_NANOPORE(longreads_ch)
@@ -46,9 +46,9 @@ workflow ELLIPSIS_HYBRID {
 	if (params.sequencer == "pacbio") {
 		CANU_PACBIO(longreads_ch)
 
-	readfiles_ch
-                .join(CANU_PACBIO.out.canu_output)
-                .view()
+		readfiles_ch
+                	.join(CANU_PACBIO.out.canu_output, by: 0)
+                	.view()
 	}
 
 /*
