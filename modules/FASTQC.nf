@@ -1,5 +1,5 @@
 process FASTQC {
-	module="FastQC/0.11.8-Java-1.8"
+	module="FastQC/0.11.9-Java-11"
 
         publishDir "${params.out_dir}/fastqc/", pattern: "$datasetID", mode: "copy"
 	
