@@ -32,7 +32,8 @@ workflow ELLIPSIS_HYBRID {
 
 	// Run QC
 	FASTQC(readfiles_ch)
-
+	NANOPLOT(longreads_ch)
+/*
 	// Hybrid assembly
 	if (params.sequencer == "nanopore") {
 		CANU_NANOPORE(longreads_ch)
@@ -51,7 +52,6 @@ workflow ELLIPSIS_HYBRID {
 	}
 
 	FILTLONG(longshort_ch)
-/*
 	UNICYCLER_HYBRID()
 	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())        
 
@@ -188,6 +188,7 @@ workflow ELLIPSIS_ANNOTATE {
 workflow {
 if (params.track == "hybrid") {
 	include { FASTQC } from "${params.module_dir}/FASTQC.nf"
+	include { NANOPLOT } from "${params.module_dir}/NANOPLOT.nf"
 	include { CANU_NANOPORE } from "${params.module_dir}/CANU.nf"
 	include { CANU_PACBIO } from "${params.module_dir}/CANU.nf"
 	include { FILTLONG } from "${params.module_dir}/FILTLONG.nf"
