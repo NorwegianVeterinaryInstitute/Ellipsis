@@ -1,21 +1,16 @@
 process MULTIQC {
-        module "FastQC/0.11.9-Java-11 "
+        conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
 
-        publishDir "${params.out_dir}/results/fastqc/", pattern: "*", mode: "copy"
-
-        tag {$datasetID}
+        publishDir "${params.out_dir}/results/multiqc/", pattern: "*html", mode: "copy"
 
         input:
-        tuple val(datasetID), file(reads)
+        file("*")
 
         output:
         file("*")
-        path "$datasetID", emit: fastqc_reports
-
 
         """
-        mkdir $datasetID
-        fastqc $reads -o $datasetID -t $task.cpus
+        multiqc *.zip
         """
 }
 

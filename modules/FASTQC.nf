@@ -10,6 +10,7 @@ process FASTQC {
 
         output:
         file("*")
+	path "$datasetID/*_fastqc.zip", emit: fastqc_reports
 
         """
 	mkdir $datasetID
