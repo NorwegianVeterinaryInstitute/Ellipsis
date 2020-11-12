@@ -24,6 +24,18 @@ The pipeline has four different tracks:
 ## Overview of pipeline
 ![Ellipsis pipeline](pipeline.png)
 
+## Input data structure
+If using either of the assembly tracks of the pipeline, the reads need to have a specific naming convention in order to match in the pipeline.
+Overall, **avoid using dots (.) in the read file names,** except at the end (.fastq.gz).
+For short reads, the following naming convention must be followed:
+```
+*_R{1,2}.fastq.gz
+```
+Where the "*" represents the sample ID. For long reads, the following convention must be followed:
+```
+*.fastq.gz
+```
+Where "*" must exactly match the "*" in the short reads. 
 
 ## How to run
 To run the pipeline, copy the main.config file and edit it to your needs.
