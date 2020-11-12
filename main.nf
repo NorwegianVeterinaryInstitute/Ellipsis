@@ -12,7 +12,6 @@ log.info "=================================================="
 nextflow.enable.dsl=2
 
 // Workflows
-
 workflow ELLIPSIS_HYBRID {
 	// Set channels
 	Channel
