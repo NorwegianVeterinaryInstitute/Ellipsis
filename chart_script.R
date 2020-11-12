@@ -7,7 +7,7 @@ grViz("digraph {
       
       node [shape = rectangle, style = filled, fillcolor = '#F6E2BC']
       
-      assembly [label = 'Assembly', shape = diamond, fillcolor = '#75BDE0']
+      assembly [label = 'Draft assembly', shape = diamond, fillcolor = '#75BDE0']
       ref [label = 'Plasmid\nreference', shape = diamond, fillcolor = '#75BDE0']
       hybrid [label = 'Hybrid Assembly', shape = diamond, fillcolor = '#75BDE0']
       reads [label = 'Short reads', shape = octagon, fillcolor = '#75BDE0']
@@ -16,7 +16,8 @@ grViz("digraph {
       chrom [label = 'Chromosome fasta', shape = ellipse, fillcolor = '#B9CC95']
 
       fastqc [label = 'FastQC']
-      longqc [label = 'Longread QC']
+      multiqc [label = 'MultiQC']
+      longqc [label = 'NanoPlot']
       mobsuite [label = 'Mob-Recon']
       resfinder [label = 'Resfinder']
       virfinder [label = 'Virulencefinder']
@@ -44,6 +45,7 @@ grViz("digraph {
       mobsuite -> plasmid -> resfinder -> report
       longreads -> canu -> filtlong -> unicycler -> hybrid -> mobsuite [color = '#EE8980']
       longreads -> longqc [color = '#EE8980']
+      reads -> filtlong [color = '#EE8980']
       plasmid -> virfinder -> report
       plasmid -> plasfinder -> report
       plasmid -> prokka -> report
@@ -64,8 +66,8 @@ grViz("digraph {
       report -> sum
       quast -> report
       ariba -> report
-      reads -> fastqc [color = '#1f78b4']
-      reads -> fastqc [color = '#EE8980']
+      reads -> fastqc -> multiqc [color = '#1f78b4']
+      reads -> fastqc -> multiqc [color = '#EE8980']
       
       reads -> bwa -> sam -> cov -> collate -> plasreport [color = '#6a3d9a']
       ref -> bwa [color = '#6a3d9a']
