@@ -1,8 +1,8 @@
 process RESFINDER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
 
-        publishDir "${params.out_dir}/resfinder", pattern: "*results_tab.tsv", mode: "copy"
-        publishDir "${params.out_dir}/resfinder", pattern: "*resfinder.log", mode: "copy"
+        publishDir "${params.out_dir}/results/resfinder", pattern: "*results_tab.tsv", mode: "copy"
+        publishDir "${params.out_dir}/results/resfinder", pattern: "*resfinder.log", mode: "copy"
 
         tag "$fasta.baseName"
 

@@ -1,7 +1,7 @@
 process MULTIQC {
         module "FastQC/0.11.9-Java-11 "
 
-        publishDir "${params.out_dir}/fastqc/", pattern: "*", mode: "copy"
+        publishDir "${params.out_dir}/results/fastqc/", pattern: "*", mode: "copy"
 
         tag {$datasetID}
 

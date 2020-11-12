@@ -1,7 +1,7 @@
 process NANOPLOT {
 	conda "/cluster/projects/nn9305k/src/miniconda/envs/nanoplot"
 
-        publishDir "${params.out_dir}/nanoplot/", pattern: "$datasetID", mode: "copy"
+        publishDir "${params.out_dir}/results/nanoplot/", pattern: "$datasetID", mode: "copy"
 	
 	tag "$datasetID"
 

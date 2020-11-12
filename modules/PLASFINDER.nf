@@ -1,8 +1,8 @@
 process PLASFINDER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
 
-        publishDir "${params.out_dir}/plasmidfinder", pattern: "*results_tab.tsv", mode: "copy"
-        publishDir "${params.out_dir}/plasmidfinder", pattern: "*plasmidfinder.log", mode: "copy"
+        publishDir "${params.out_dir}/results/plasmidfinder", pattern: "*results_tab.tsv", mode: "copy"
+        publishDir "${params.out_dir}/results/plasmidfinder", pattern: "*plasmidfinder.log", mode: "copy"
 
         tag "$fasta.baseName"
 

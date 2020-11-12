@@ -1,8 +1,8 @@
 process UNICYCLER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/unicycler"
 
-        publishDir "${params.out_dir}/unicycler/", pattern: "*assembly.fasta", mode: "copy"
-        publishDir "${params.out_dir}/unicycler/", pattern: "*unicycler.log", mode: "copy"
+        publishDir "${params.out_dir}/results/unicycler/", pattern: "*assembly.fasta", mode: "copy"
+        publishDir "${params.out_dir}/results/unicycler/", pattern: "*unicycler.log", mode: "copy"
 
         tag "$datasetID"
         label 'heavy'
@@ -24,8 +24,8 @@ process UNICYCLER {
 process UNICYCLER_HYBRID {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/unicycler"
 
-        publishDir "${params.out_dir}/unicycler/", pattern: "*assembly.fasta", mode: "copy"
-        publishDir "${params.out_dir}/unicycler/", pattern: "*unicycler.log", mode: "copy"
+        publishDir "${params.out_dir}/results/unicycler/", pattern: "*assembly.fasta", mode: "copy"
+        publishDir "${params.out_dir}/results/unicycler/", pattern: "*unicycler.log", mode: "copy"
 
         tag "$datasetID"
         label 'hybrid'

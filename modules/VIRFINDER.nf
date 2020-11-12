@@ -1,8 +1,8 @@
 process VIRFINDER {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
 
-        publishDir "${params.out_dir}/virfinder", pattern: "*results_tab.tsv", mode: "copy"
-        publishDir "${params.out_dir}/virfinder", pattern: "*virfinder.log", mode: "copy"
+        publishDir "${params.out_dir}/results/virfinder", pattern: "*results_tab.tsv", mode: "copy"
+        publishDir "${params.out_dir}/results/virfinder", pattern: "*virfinder.log", mode: "copy"
 
         tag "$fasta.baseName"
 

@@ -1,12 +1,12 @@
 process MOB_RECON {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/Mobsuite"
 
-        publishDir "${params.out_dir}/mobsuite/plasmid_fasta", pattern: "*plasmid*fasta", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite/mobtyper_reports", pattern: "*_mobtyper_plasmid_*.fasta_report.txt", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite", pattern: "*mob_recon.log", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite/repetitive_blast_reports", pattern: "*repetitive_blast_report.txt", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite/contig_reports", pattern: "*contig_report.txt", mode: "copy"
-        publishDir "${params.out_dir}/mobsuite/chromosome_fasta", pattern: "*chromosome.fasta", mode: "copy"
+        publishDir "${params.out_dir}/results/mobsuite/plasmid_fasta", pattern: "*plasmid*fasta", mode: "copy"
+        publishDir "${params.out_dir}/results/mobsuite/mobtyper_reports", pattern: "*_mobtyper_plasmid_*.fasta_report.txt", mode: "copy"
+        publishDir "${params.out_dir}/results/mobsuite", pattern: "*mob_recon.log", mode: "copy"
+        publishDir "${params.out_dir}/results/mobsuite/repetitive_blast_reports", pattern: "*repetitive_blast_report.txt", mode: "copy"
+        publishDir "${params.out_dir}/results/mobsuite/contig_reports", pattern: "*contig_report.txt", mode: "copy"
+        publishDir "${params.out_dir}/results/mobsuite/chromosome_fasta", pattern: "*chromosome.fasta", mode: "copy"
 
         tag "$datasetID"
 

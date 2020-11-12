@@ -1,7 +1,6 @@
 process FILTLONG {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/Filtlong"
 
-
         tag "$datasetID"
         label 'heavy'
 

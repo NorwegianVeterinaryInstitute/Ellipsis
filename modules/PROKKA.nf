@@ -1,7 +1,7 @@
 process PROKKA {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
 
-        publishDir "${params.out_dir}/prokka/${fasta.baseName}", pattern: "*", mode: "copy"
+        publishDir "${params.out_dir}/results/prokka/${fasta.baseName}", pattern: "*", mode: "copy"
 
         tag "$fasta.baseName"
 
