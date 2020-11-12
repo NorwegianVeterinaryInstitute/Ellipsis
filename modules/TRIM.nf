@@ -1,6 +1,8 @@
 process TRIM {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/Trimgalore"
 
+	tag "$datasetID"
+
         input:
         tuple val(datasetID), file(R1), file(R2)
 
