@@ -24,37 +24,45 @@ workflow ELLIPSIS_HYBRID {
 		.map { file -> tuple(file.simpleName, file) }
 		.set { longreads_ch }
 
-	aribaresdb = Channel
+	Channel
                 .value(params.ariba_resdb)
+		.set { aribaresdb }
 
-        aribavirdb = Channel
+        Channel
                 .value(params.ariba_virdb)
+		.set { aribavirdb }
 
-	// Run QC
+	// Read QC
 	FASTQC(readfiles_ch)
 	NANOPLOT(longreads_ch)
-/*
-	// Hybrid assembly
+
+	// Trimming and filtering
+	TRIM(readfiles_ch)
+
 	if (params.sequencer == "nanopore") {
 		CANU_NANOPORE(longreads_ch)
 		
-		readfiles_ch
+		TRIM.out.trim_reads
 			.join(CANU_NANOPORE.out.canu_output, by: 0)
-			.set { longshort_ch }
+			.set { pre_filt_reads_ch }
 	}
-
 	if (params.sequencer == "pacbio") {
 		CANU_PACBIO(longreads_ch)
 
-		readfiles_ch
+		TRIM.out.trim_reads
                 	.join(CANU_PACBIO.out.canu_output, by: 0)
-                	.set { longshort_ch }
+                	.set { pre_filt_reads_ch }
 	}
+	FILTLONG(pre_filt_reads_ch)
 
-	FILTLONG(longshort_ch)
-	UNICYCLER_HYBRID()
+	TRIM.out.trim_reads
+		.join(FILTLONG.out.filtered_longreads, by: 0)
+		.set { trim_filt_reads_ch }
+
+	UNICYCLER_HYBRID(trim_filt_reads_ch)
 	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())        
 
+/*
 	// Plasmid analyses
 	MOB_RECON(UNICYCLER_HYBRID.out.new_assemblies)
 
@@ -189,8 +197,8 @@ workflow {
 if (params.track == "hybrid") {
 	include { FASTQC } from "${params.module_dir}/FASTQC.nf"
 	include { NANOPLOT } from "${params.module_dir}/NANOPLOT.nf"
-	include { CANU_NANOPORE } from "${params.module_dir}/CANU.nf"
-	include { CANU_PACBIO } from "${params.module_dir}/CANU.nf"
+	include { TRIM } from "${params.module_dir}/TRIM.nf"
+	include { CANU_NANOPORE;CANU_PACBIO } from "${params.module_dir}/CANU.nf"
 	include { FILTLONG } from "${params.module_dir}/FILTLONG.nf"
 	include { UNICYCLER_HYBRID } from "${params.module_dir}/UNICYCLER.nf"
         include { QUAST } from "${params.module_dir}/QUAST.nf"
@@ -230,3 +238,4 @@ if (params.track == "no_assembly") {
 	ELLIPSIS_ANNOTATE()
 	}
 }
+
