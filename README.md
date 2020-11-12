@@ -35,7 +35,7 @@ Where the "*" represents the sample ID. For long reads, the following convention
 ```
 *.fastq.gz
 ```
-Where "*" must exactly match the "*" in the short reads. 
+Where "\*" must exactly match the "\*" in the short reads. 
 
 ## How to run
 To run the pipeline, copy the main.config file and edit it to your needs.
