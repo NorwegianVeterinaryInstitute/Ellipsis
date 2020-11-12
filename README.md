@@ -7,19 +7,19 @@ The pipeline has four different tracks:
 
 - Hybrid assembly track
 
-Runs hybrid assembly and gene detection/annotation (red arrows in figure)
+   Runs hybrid assembly and gene detection/annotation (red arrows in figure)
 
 - Draft assembly track
 
-Runs draft assembly (short reads only) and gene detection/annotation (blue arrows in figure)
+   Runs draft assembly (short reads only) and gene detection/annotation (blue arrows in figure)
 
 - Annotation track
 
-Only runs gene detection/annotation on input assemblies (everything below and including MOB-recon in figure)
+   Only runs gene detection/annotation on input assemblies (everything below and including MOB-recon in figure)
 
 - Plasmid mapping pipeline (PlasMap)
 
-Runs the plasmid mapping pipeline, which calculates the percent coverage of reads after mapping to a plasmid sequence (separate from the main pipeline)
+   Runs the plasmid mapping pipeline, which calculates the percent coverage of reads after mapping to a plasmid sequence (separate from the main pipeline)
 
 ## Overview of pipeline
 ![Ellipsis pipeline](pipeline.png)
@@ -40,17 +40,17 @@ Java is automatically activated and deactivated.
 
 ## Output folders
 
-- Config files
+- config_files
 
-Contains the config file used and the main.nf file used in the run
+   Contains the config file used and the main.nf file used in the run
 
 - results
 
-Main results from each process
+   Main results from each process
 
 - reports
 
-Collated reports from all relevant processes
+   Collated reports from all relevant processes
 
 Håkon Kaspersen,
 12.11.2020
