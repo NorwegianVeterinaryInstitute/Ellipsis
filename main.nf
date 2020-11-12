@@ -35,6 +35,7 @@ workflow ELLIPSIS_HYBRID {
 	// Read QC
 	FASTQC(readfiles_ch)
 	NANOPLOT(longreads_ch)
+	MULTIQC(FASTQC.out.fastqc_reports.collect())
 
 	// Trimming and filtering
 	TRIM(readfiles_ch)
@@ -62,7 +63,6 @@ workflow ELLIPSIS_HYBRID {
 	UNICYCLER_HYBRID(trim_filt_reads_ch)
 	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())        
 
-/*
 	// Plasmid analyses
 	MOB_RECON(UNICYCLER_HYBRID.out.new_assemblies)
 
@@ -99,27 +99,32 @@ workflow ELLIPSIS_HYBRID {
                 .set { run_ariba_report }
 
         REPORT(report_ch, run_ariba_report)
-*/
 }
 
 workflow ELLIPSIS_ASSEMBLY {
 	Channel
                 .fromFilePairs(params.reads, flat: true,  checkIfExists: true)
-		.set { readfiles }
+		.set { readfiles_ch }
 
-	aribaresdb = Channel
+	Channel
 		.value(params.ariba_resdb)
+		.set { aribaresdb }
 
-	aribavirdb = Channel
+	Channel
                 .value(params.ariba_virdb)
+		.set { aribavirdb }
 
-	ARIBA_RES(readfiles, aribaresdb)
-	ARIBA_VIR(readfiles, aribavirdb)
-	TRIM(readfiles)
+	// Read QC
+        FASTQC(readfiles_ch)
+        MULTIQC(FASTQC.out.fastqc_reports.collect())
+
+	// Assembly
+	TRIM(readfiles_ch)
 	UNICYCLER(TRIM.out.trim_reads)
 	QUAST(UNICYCLER.out.quast_ch.collect())
 	MOB_RECON(UNICYCLER.out.new_assemblies)
 
+	// Plasmid analyses
 	if (!params.chrom) {
 		MOB_RECON.out.plasmidFasta.transpose(remainder: true)
                 	.set { fasta_ch }
@@ -130,6 +135,8 @@ workflow ELLIPSIS_ASSEMBLY {
                 	.set { fasta_ch }
 	}
 
+	ARIBA_RES(readfiles_ch, aribaresdb)
+        ARIBA_VIR(readfiles_ch, aribavirdb)
 	RESFINDER(fasta_ch)
         VIRFINDER(fasta_ch)
         PLASFINDER(fasta_ch)
@@ -196,6 +203,7 @@ workflow ELLIPSIS_ANNOTATE {
 workflow {
 if (params.track == "hybrid") {
 	include { FASTQC } from "${params.module_dir}/FASTQC.nf"
+	include { MULTIQC } from "${params.module_dir}/MULTIQC.nf"
 	include { NANOPLOT } from "${params.module_dir}/NANOPLOT.nf"
 	include { TRIM } from "${params.module_dir}/TRIM.nf"
 	include { CANU_NANOPORE;CANU_PACBIO } from "${params.module_dir}/CANU.nf"
@@ -203,7 +211,8 @@ if (params.track == "hybrid") {
 	include { UNICYCLER_HYBRID } from "${params.module_dir}/UNICYCLER.nf"
         include { QUAST } from "${params.module_dir}/QUAST.nf"
         include { MOB_RECON } from "${params.module_dir}/MOBSUITE.nf"
-        include { RESFINDER } from "${params.module_dir}/RESFINDER.nf"
+	include { ARIBA_RES;ARIBA_VIR } from "${params.module_dir}/ARIBA.nf"
+	include { RESFINDER } from "${params.module_dir}/RESFINDER.nf"
         include { VIRFINDER } from "${params.module_dir}/VIRFINDER.nf"
         include { PLASFINDER } from "${params.module_dir}/PLASFINDER.nf"
         include { PROKKA } from "${params.module_dir}/PROKKA.nf"
@@ -213,6 +222,8 @@ if (params.track == "hybrid") {
 }
 
 if (params.track == "short_assembly") {
+	include { FASTQC } from "${params.module_dir}/FASTQC.nf"
+        include { MULTIQC } from "${params.module_dir}/MULTIQC.nf"
 	include { ARIBA_RES;ARIBA_VIR } from "${params.module_dir}/ARIBA.nf"
 	include { TRIM } from "${params.module_dir}/TRIM.nf"
 	include { UNICYCLER } from "${params.module_dir}/UNICYCLER.nf"
@@ -238,4 +249,3 @@ if (params.track == "no_assembly") {
 	ELLIPSIS_ANNOTATE()
 	}
 }
-
