@@ -86,20 +86,31 @@ virfinder_reports <- get_data(".",
          "vf_gene_identity" = Identity,
          "vf_contig" = Contig)
 
+quast_report <- read_delim("transposed_report.tsv",
+                           delim = "\t") %>%
+  mutate(Assembly = sub("_assembly", "", Assembly),
+         Assembly = gsub("_", "-", Assembly)) %>%
+  rename("sample" = Assembly,
+         "number_of_contigs" = `# contigs`,
+         "largest_contig" = `Largest contig`,
+         "total_length" = `Total length`,
+         "GC" = `GC (%)`) %>%
+  select(sample, number_of_contigs, largest_contig, total_length, GC, N50)
+
 if (run_ariba == "true") {
   ariba_res_report <- get_data(".",
-                           pattern = "ariba_resfinder",
-                           convert = TRUE) %>%
+                               pattern = "ariba_resfinder",
+                               convert = TRUE) %>%
     fix_gene_names("_ariba_resfinder_report.tsv", db = "res") %>%
     create_table() %>%
     create_report() %>%
     rename("sample" = ref)
   
   ariba_vir_report <- get_data(".",
-                           pattern = "ariba_virulence",
-                           convert = TRUE) %>%
-    fix_gene_names("_ariba_virulence_report.tsv", db = "res") %>%
-    create_table() %>%
+                               pattern = "ariba_virulence",
+                               convert = TRUE) %>%
+    fix_gene_names("_ariba_virulence_report.tsv", db = "virfinder") %>%
+    create_table(acquired = FALSE) %>%
     create_report() %>%
     rename("sample" = ref)
   
@@ -120,6 +131,8 @@ if (run_ariba == "true") {
     select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
     summarise_all(list(func_paste)) %>%
     rename("sample" = ref) %>%
+    left_join(quast_report, by = "sample") %>%
+    select(sample, number_of_contigs, largest_contig, total_length, GC, N50, everything()) %>%
     left_join(ariba_res_report, by = "sample") %>%
     left_join(ariba_vir_report, by = "sample")
 } else {
@@ -139,7 +152,9 @@ if (run_ariba == "true") {
     ) %>%
     select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
     summarise_all(list(func_paste)) %>%
-    rename("sample" = ref)
+    rename("sample" = ref) %>%
+    left_join(quast_report, by = "sample") %>%
+    select(sample, number_of_contigs, largest_contig, total_length, GC, N50, everything())
 }
 
 # summarise and merge data
