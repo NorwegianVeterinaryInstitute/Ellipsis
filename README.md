@@ -19,7 +19,7 @@ The pipeline has four different tracks:
 
 - Plasmid mapping pipeline (PlasMap)
 
-   Runs the plasmid mapping pipeline, which calculates the percent coverage of reads after mapping to a plasmid sequence (separate from the main pipeline)
+   Runs plasmid screening on the input reads, based on supplied reference sequence
 
 ## Overview of pipeline
 ![Ellipsis pipeline](pipeline.png)
@@ -38,15 +38,15 @@ Where the "*" represents the sample ID. For long reads, the following convention
 Where "\*" must exactly match the "\*" in the short reads. 
 
 ## How to run
-To run the pipeline, copy the main.config file and edit it to your needs.
+To run the pipeline, copy the main.config or the plasmap.config file and edit it to your needs.
 Then, run the following:
 
 ```
 To run Ellipsis main pipeline:
-path/to/ellipsis.sh config_file.config output_folder
+path/to/ellipsis.sh main config_file.config output_folder
 
 To run PlasMap pipeline:
-path/to/plasmap.sh plasmap.config output_folder
+path/to/ellipsis.sh plasmap plasmap.config output_folder
 ```
 Java is automatically activated and deactivated.
 
