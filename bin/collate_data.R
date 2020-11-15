@@ -139,7 +139,7 @@ if (run_ariba == "true") {
     ) %>%
     select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
     summarise_all(list(func_paste)) %>%
-    rename("sample" = ref) %>%
+    rename("sample" = ref)
 }
 
 # summarise and merge data
