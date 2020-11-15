@@ -9,7 +9,9 @@ workdir=${4:-$USERWORK/ellipsis_work}
 
 mkdir -p ${outdir}/config_files
 cp ${config} ${outdir}/config_files
-git --git-dir ${script_directory}/.git branch -v | grep "\*" | awk '{print $2, $3}' > ${outdir}/config_files/ellipsis_version.log
+commitid=$(git --git-dir ${script_directory}/.git branch -v | grep "\*" | awk '{print $2, $3}')
+version=$(git tag | tail -1)
+echo "Ellipsis version $version, commit-id $commitid" > ${outdir}/config_files/ellipsis_version.log
 
 if [[ $track == "main" ]]; then
 	cp ${script_directory}/main.nf ${outdir}/config_files
