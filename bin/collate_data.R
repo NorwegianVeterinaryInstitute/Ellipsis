@@ -5,13 +5,15 @@ library(impoRt)
 library(funtools)
 library(tidyr)
 library(readr)
-library(vampfunc)
 
+path <- "."
 args <- commandArgs(trailingOnly = TRUE)
 run_ariba <- args[1]
 
+source("bin/collate_functions.R")
+
 # import data
-mobtyper_reports <- get_data(".",
+mobtyper_reports <- get_data(path,
                              pattern = "mobtyper",
                              convert = TRUE) %>%
   mutate(ref = sub("_mobtyper", "", ref),
@@ -22,7 +24,7 @@ mobtyper_reports <- get_data(".",
   ungroup() %>%
   select(ref, element, everything(), -file_id)
 
-prokka_reports <- get_data(".",
+prokka_reports <- get_data(path,
                            pattern = "prokka_report",
                            convert = TRUE) %>%
   mutate(ref = sub("prokka_report_", "", ref),
@@ -38,7 +40,7 @@ prokka_reports <- get_data(".",
   spread(key, value) %>%
   select(ref, element, CDS, gene)
 
-plasmidfinder_reports <- get_data(".",
+plasmidfinder_reports <- get_data(path,
                                   pattern = "plasfinder",
                                   convert = TRUE) %>%
   mutate(ref = sub("_plasfinder_results_tab.tsv", "", ref),
@@ -54,7 +56,7 @@ plasmidfinder_reports <- get_data(".",
          "pf_replicon_identity" = Identity,
          "pf_contig" = Contig)
 
-resfinder_reports <- get_data(".",
+resfinder_reports <- get_data(path,
                               pattern = "resfinder",
                               convert = TRUE) %>%
   mutate(ref = sub("_resfinder_results_tab.tsv", "", ref),
@@ -70,7 +72,7 @@ resfinder_reports <- get_data(".",
          "rf_gene_identity" = Identity,
          "rf_contig" = Contig)
 
-virfinder_reports <- get_data(".",
+virfinder_reports <- get_data(path,
                               pattern = "virfinder",
                               convert = TRUE) %>%
   mutate(ref = sub("_virfinder_results_tab.tsv", "", ref),
@@ -87,6 +89,20 @@ virfinder_reports <- get_data(".",
          "vf_contig" = Contig)
 
 if (run_ariba == "true") {
+<<<<<<< HEAD
+  rawdata_res <- get_data(path,
+                          pattern = "ariba_resfinder",
+                          convert = TRUE) %>%
+    fix_gene_names("_ariba_resfinder_report.tsv", db = "res")
+  
+  rawdata_vir <- get_data(path,
+                          pattern = "ariba_virulence",
+                          convert = TRUE) %>%
+    fix_gene_names("_ariba_virulence_report.tsv", db = "virfinder")
+
+  df_vir <- tryCatch(filter_flags(rawdata_vir), error = function(e) FALSE)
+  df_res <- tryCatch(filter_flags(rawdata_res), error = function(e) FALSE)
+=======
   ariba_res_report <- get_data(".",
                                pattern = "ariba_resfinder",
                                convert = TRUE) %>%
@@ -102,46 +118,55 @@ if (run_ariba == "true") {
     create_table(acquired = FALSE) %>%
     create_report() %>%
     rename("sample" = ref)
+>>>>>>> 82ebe5ac3a77802c4ac4543036aef818b36fc573
   
-  summary_report <- mobtyper_reports %>%
-    left_join(prokka_reports, by = c("ref", "element")) %>%
-    mutate(
-      total_length = as.numeric(total_length),
-      num_contigs = as.numeric(num_contigs),
-      gene = as.numeric(gene)
-    ) %>%
-    group_by(ref) %>%
-    mutate(
-      n_plasmids = length(element),
-      size_range = paste(min(total_length), " - ", max(total_length)),
-      contig_range = paste(min(num_contigs), " - ", max(num_contigs)),
-      gene_range = paste(min(gene), " - ", max(gene))
-    ) %>%
-    select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
-    summarise_all(list(func_paste)) %>%
-    rename("sample" = ref) %>%
-    left_join(ariba_res_report, by = "sample") %>%
-    left_join(ariba_vir_report, by = "sample")
-} else {
-  summary_report <- mobtyper_reports %>%
-    left_join(prokka_reports, by = c("ref", "element")) %>%
-    mutate(
-      total_length = as.numeric(total_length),
-      num_contigs = as.numeric(num_contigs),
-      gene = as.numeric(gene)
-    ) %>%
-    group_by(ref) %>%
-    mutate(
-      n_plasmids = length(element),
-      size_range = paste(min(total_length), " - ", max(total_length)),
-      contig_range = paste(min(num_contigs), " - ", max(num_contigs)),
-      gene_range = paste(min(gene), " - ", max(gene))
-    ) %>%
-    select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
-    summarise_all(list(func_paste)) %>%
-    rename("sample" = ref)
-}
+  if (is.data.frame(df_vir) == TRUE & is.data.frame(df_res) == TRUE) {
+    create_table(df_vir) %>%
+      write_delim(path = "ariba_virfinder_results.txt", delim = "\t")
+    create_table(df_res) %>%
+      write_delim(path = "ariba_resfinder_results.txt", delim = "\t")
+  }
+  
+  if (is.data.frame(df_vir) == TRUE & is.data.frame(df_res) == FALSE) {
+    create_table(df_vir) %>%
+      write_delim(path = "ariba_virfinder_results.txt", delim = "\t")
+    "No genes passed quality checks" %>% 
+      write_lines("ariba_resfinder_results.txt")
+  }
+  
+  if (is.data.frame(df_vir) == FALSE & is.data.frame(df_res) == TRUE) {
+    "No genes passed quality checks" %>% 
+      write_lines("ariba_virfinder_results.txt")
+    create_table(df_res) %>%
+      write_delim(path = "ariba_resfinder_results.txt", delim = "\t")
+  }
+  
+  if (is.data.frame(df_vir) == FALSE & is.data.frame(df_res) == FALSE) {
+    "No genes passed quality checks" %>% 
+      write_lines("ariba_virfinder_results.txt")
+    "No genes passed quality checks" %>% 
+      write_lines("ariba_resfinder_results.txt")
+  }
+} 
 
+summary_report <- mobtyper_reports %>%
+    left_join(prokka_reports, by = c("ref", "element")) %>%
+    mutate(
+      total_length = as.numeric(total_length),
+      num_contigs = as.numeric(num_contigs),
+      gene = as.numeric(gene)
+    ) %>%
+    group_by(ref) %>%
+    mutate(
+      n_plasmids = length(element),
+      size_range = paste(min(total_length), " - ", max(total_length)),
+      contig_range = paste(min(num_contigs), " - ", max(num_contigs)),
+      gene_range = paste(min(gene), " - ", max(gene))
+    ) %>%
+    select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
+    summarise_all(list(func_paste)) %>%
+    rename("sample" = ref)  
+  
 # summarise and merge data
 res_truncated <- resfinder_reports %>%
   select(ref, element, rf_gene) %>%
@@ -202,3 +227,4 @@ write.table(plasmidfinder_reports,
             sep = "\t",
             row.names = FALSE,
             quote = FALSE)
+
