@@ -34,10 +34,12 @@ workflow ELLIPSIS_HYBRID {
 	// Read QC
 	FASTQC(readfiles_ch)
 	NANOPLOT(longreads_ch)
-	MULTIQC(FASTQC.out.fastqc_reports.collect())
+	MULTIQC_PRE(FASTQC.out.fastqc_reports.collect())
 
 	// Trimming and filtering
 	TRIM(readfiles_ch)
+	FASTQC_POST(TRIM.out.trim_reads)
+	MULTIQC_POST(FASTQC_POST.out.fastqc_reports.collect())
 
 	if (params.sequencer == "nanopore") {
 		CANU_NANOPORE(longreads_ch)
@@ -115,10 +117,12 @@ workflow ELLIPSIS_ASSEMBLY {
 
 	// Read QC
         FASTQC(readfiles_ch)
-        MULTIQC(FASTQC.out.fastqc_reports.collect())
+        MULTIQC_PRE(FASTQC.out.fastqc_reports.collect())
 
 	// Assembly
 	TRIM(readfiles_ch)
+	FASTQC_POST(TRIM.out.trim_reads)
+        MULTIQC_POST(FASTQC_POST.out.fastqc_reports.collect())
 	UNICYCLER(TRIM.out.trim_reads)
 	QUAST(UNICYCLER.out.quast_ch.collect())
 	MOB_RECON(UNICYCLER.out.new_assemblies)
@@ -201,8 +205,8 @@ workflow ELLIPSIS_ANNOTATE {
 
 workflow {
 if (params.track == "hybrid") {
-	include { FASTQC } from "${params.module_dir}/FASTQC.nf"
-	include { MULTIQC } from "${params.module_dir}/MULTIQC.nf"
+	include { FASTQC; FASTQC as FASTQC_POST } from "${params.module_dir}/FASTQC.nf"
+	include { MULTIQC_PRE; MULTIQC_POST } from "${params.module_dir}/MULTIQC.nf"
 	include { NANOPLOT } from "${params.module_dir}/NANOPLOT.nf"
 	include { TRIM } from "${params.module_dir}/TRIM.nf"
 	include { CANU_NANOPORE;CANU_PACBIO } from "${params.module_dir}/CANU.nf"
@@ -221,8 +225,8 @@ if (params.track == "hybrid") {
 }
 
 if (params.track == "short_assembly") {
-	include { FASTQC } from "${params.module_dir}/FASTQC.nf"
-        include { MULTIQC } from "${params.module_dir}/MULTIQC.nf"
+	include { FASTQC; FASTQC as FASTQC_POST } from "${params.module_dir}/FASTQC.nf"
+        include { MULTIQC_PRE; MULTIQC_POST } from "${params.module_dir}/MULTIQC.nf"
 	include { ARIBA_RES;ARIBA_VIR } from "${params.module_dir}/ARIBA.nf"
 	include { TRIM } from "${params.module_dir}/TRIM.nf"
 	include { UNICYCLER } from "${params.module_dir}/UNICYCLER.nf"
