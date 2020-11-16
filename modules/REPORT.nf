@@ -6,6 +6,7 @@ process REPORT {
         publishDir "${params.out_dir}/reports", pattern: "resfinder_report.txt", mode: "copy"
         publishDir "${params.out_dir}/reports", pattern: "virfinder_report.txt", mode: "copy"
         publishDir "${params.out_dir}/reports", pattern: "plasmidfinder_report.txt", mode: "copy"
+	publishDir "${params.out_dir}/reports", pattern: "ariba_*_results.txt", mode: "copy"
 
         input:
         file("*")
