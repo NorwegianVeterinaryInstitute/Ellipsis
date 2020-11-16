@@ -12,7 +12,7 @@ process TRIM {
 
         script:
         """
-        trim_galore -o . --paired -trim1 $R1 $R2 &> ${datasetID}_trimgalore.log
+        trim_galore -o . --paired --quality $params.phred_score -trim1 $R1 $R2 &> ${datasetID}_trimgalore.log
         """
 }
 
