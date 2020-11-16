@@ -1,7 +1,7 @@
 process QUAST {
         conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
 
-        publishDir "${params.out_dir}/results/reports/", pattern: "transposed_report.tsv", mode: "copy", saveAs: {"Quast_report.tsv"}
+        publishDir "${params.out_dir}/reports/", pattern: "transposed_report.tsv", mode: "copy", saveAs: {"Quast_report.tsv"}
 
         input:
         file("*")
