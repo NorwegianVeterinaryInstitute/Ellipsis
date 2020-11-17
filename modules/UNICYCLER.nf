@@ -5,7 +5,7 @@ process UNICYCLER {
         publishDir "${params.out_dir}/results/unicycler/", pattern: "*unicycler.log", mode: "copy"
 
         tag "$datasetID"
-        label 'heavy'
+        label 'longtime'
 
         input:
         tuple val(datasetID), file(R1), file(R2)
