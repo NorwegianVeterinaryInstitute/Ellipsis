@@ -1,4 +1,5 @@
-# Ellipsis
+<p align="center"><img src="logo.png" alt="Ellipsis" width="400"></p>
+
 ## Plasmid assembly, gene identification and annotation pipeline
 
 Ellipsis will run hybrid assembly and identify the plasmids and chromosomal sequences in these assemblies.
