@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/279863701.svg)](https://zenodo.org/badge/latestdoi/279863701)
+
 <p align="center"><img src="logo.png" alt="Ellipsis" width="600"></p>
 
 ## Plasmid assembly, gene identification and annotation pipeline
