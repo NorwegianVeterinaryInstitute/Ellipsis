@@ -1,4 +1,4 @@
-<p align="center"><img src="logo.png" alt="Ellipsis" width="400"></p>
+<p align="center"><img src="logo.png" alt="Ellipsis" width="600"></p>
 
 ## Plasmid assembly, gene identification and annotation pipeline
 
