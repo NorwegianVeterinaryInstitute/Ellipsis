@@ -10,7 +10,12 @@ nonzero=$(bedtools genomecov -ibam $bam -bga | awk '$4>0 {bpCountNonZero+=($3-$2
 
 if [ -z "$nonzero" ]
 then
-	percent="0.0"
+	nonzero=0
+	percent=$(bc <<< "scale=6; ($nonzero / ($zero + $nonzero))*100")
+elif [ -z "$zero" ]
+then
+	zero=0
+	percent=$(bc <<< "scale=6; ($nonzero / ($zero + $nonzero))*100")
 else
 	percent=$(bc <<< "scale=6; ($nonzero / ($zero + $nonzero))*100")
 fi
