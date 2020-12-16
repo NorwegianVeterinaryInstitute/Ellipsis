@@ -1,4 +1,6 @@
 [![DOI](https://zenodo.org/badge/279863701.svg)](https://zenodo.org/badge/latestdoi/279863701)
+![Platform](https://img.shields.io/badge/Platform-Nextflow-green)
+[![License](![GitHub](https://img.shields.io/github/license/NorwegianVeterinaryInstitute/Ellipsis?style=flat-square))](https://opensource.org/licenses/BSD-3-Clause)
 
 <p align="center"><img src="logo.png" alt="Ellipsis" width="600"></p>
 
