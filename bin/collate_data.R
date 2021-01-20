@@ -137,7 +137,8 @@ prokka_reports <- get_data(path,
   rename("val" = `organism: Genus species strain `) %>%
   separate(val, c("key", "value"), ":") %>%
   spread(key, value) %>%
-  select(ref, element, CDS, gene)
+  select(ref, element, CDS, gene, bases) %>%
+  mutate(bases = gsub(" ", "", bases))
 
 plasmidfinder_reports <- get_data(path,
                                   pattern = "plasfinder",
@@ -274,6 +275,8 @@ total_report <- prokka_reports %>%
     "rep_type(s)",
     "PredictedMobility"
   )], by = c("ref", "element")) %>%
+  mutate(total_length = if_else(is.na(total_length), bases, total_length)) %>%
+  select(-bases) %>%
   left_join(plas_truncated, by = c("ref", "element")) %>%
   left_join(res_truncated, by = c("ref", "element")) %>%
   left_join(vir_truncated, by = c("ref", "element"))
@@ -308,4 +311,5 @@ write.table(plasmidfinder_reports,
             sep = "\t",
             row.names = FALSE,
             quote = FALSE)
+
 
