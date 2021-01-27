@@ -32,6 +32,14 @@ workflow ELLIPSIS_HYBRID {
                 .value(params.ariba_virdb)
 		.set { aribavirdb }
 
+	Channel
+		.value(params.sequencer)
+		.set { seq_type }
+
+	Channel
+		.value(params.illumina_filtering)
+		.set { filt_illu }
+
 	// Read QC
 	FASTQC(readfiles_ch)
 	NANOPLOT(longreads_ch)
@@ -42,30 +50,27 @@ workflow ELLIPSIS_HYBRID {
 		TRIM(readfiles_ch)
 		FASTQC_POST(TRIM.out.trim_reads)
 		MULTIQC_POST(FASTQC_POST.out.fastqc_reports.collect())
-
-		if (params.sequencer == "nanopore") {
-			CANU_NANOPORE(longreads_ch)
-		
-			TRIM.out.trim_reads
-				.join(CANU_NANOPORE.out.canu_output, by: 0)
-				.set { pre_filt_reads_ch }
-		}
-		if (params.sequencer == "pacbio") {
-			CANU_PACBIO(longreads_ch)
-
-			TRIM.out.trim_reads
-                		.join(CANU_PACBIO.out.canu_output, by: 0)
-                		.set { pre_filt_reads_ch }
-		}
-		FILTLONG(pre_filt_reads_ch)
+		CANU(seq_type, longreads_ch)
 
 		TRIM.out.trim_reads
-			.join(FILTLONG.out.filtered_longreads, by: 0)
-			.set { all_reads_ch }
+                	.join(CANU.out.canu_output, by: 0)
+                        .set { pre_filt_reads_ch }		
+
+		FILTLONG(filt_illu, pre_filt_reads_ch)
+
+		TRIM.out.trim_reads
+                       	.join(FILTLONG.out.filtered_longreads, by: 0)
+                       	.set { all_reads_ch }
 	}
 	if (!params.trim) {
 		readfiles_ch
-			.join(longreads_ch, by: 0)
+			.join(longreads_ch)
+			.set { pre_filt_reads_ch }
+
+		FILTLONG(filt_illu, pre_filt_reads_ch)
+	
+		readfiles_ch
+			.join(FILTLONG.out.filtered_longreads, by: 0)
 			.set { all_reads_ch }
 	}
 
@@ -217,7 +222,7 @@ if (params.track == "hybrid") {
 	include { MULTIQC_PRE; MULTIQC_POST } from "${params.module_dir}/MULTIQC.nf"
 	include { NANOPLOT } from "${params.module_dir}/NANOPLOT.nf"
 	include { TRIM } from "${params.module_dir}/TRIM.nf"
-	include { CANU_NANOPORE;CANU_PACBIO } from "${params.module_dir}/CANU.nf"
+	include { CANU } from "${params.module_dir}/CANU.nf"
 	include { FILTLONG } from "${params.module_dir}/FILTLONG.nf"
 	include { UNICYCLER_HYBRID } from "${params.module_dir}/UNICYCLER.nf"
         include { QUAST } from "${params.module_dir}/QUAST.nf"
