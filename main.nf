@@ -1,3 +1,4 @@
+
 log.info "=================================================="
 log.info "=================================================="
 log.info "                                                  "
@@ -37,31 +38,38 @@ workflow ELLIPSIS_HYBRID {
 	MULTIQC_PRE(FASTQC.out.fastqc_reports.collect())
 
 	// Trimming and filtering
-	TRIM(readfiles_ch)
-	FASTQC_POST(TRIM.out.trim_reads)
-	MULTIQC_POST(FASTQC_POST.out.fastqc_reports.collect())
+	if (params.trim) {
+		TRIM(readfiles_ch)
+		FASTQC_POST(TRIM.out.trim_reads)
+		MULTIQC_POST(FASTQC_POST.out.fastqc_reports.collect())
 
-	if (params.sequencer == "nanopore") {
-		CANU_NANOPORE(longreads_ch)
+		if (params.sequencer == "nanopore") {
+			CANU_NANOPORE(longreads_ch)
 		
-		TRIM.out.trim_reads
-			.join(CANU_NANOPORE.out.canu_output, by: 0)
-			.set { pre_filt_reads_ch }
-	}
-	if (params.sequencer == "pacbio") {
-		CANU_PACBIO(longreads_ch)
+			TRIM.out.trim_reads
+				.join(CANU_NANOPORE.out.canu_output, by: 0)
+				.set { pre_filt_reads_ch }
+		}
+		if (params.sequencer == "pacbio") {
+			CANU_PACBIO(longreads_ch)
+
+			TRIM.out.trim_reads
+                		.join(CANU_PACBIO.out.canu_output, by: 0)
+                		.set { pre_filt_reads_ch }
+		}
+		FILTLONG(pre_filt_reads_ch)
 
 		TRIM.out.trim_reads
-                	.join(CANU_PACBIO.out.canu_output, by: 0)
-                	.set { pre_filt_reads_ch }
+			.join(FILTLONG.out.filtered_longreads, by: 0)
+			.set { all_reads_ch }
 	}
-	FILTLONG(pre_filt_reads_ch)
+	if (!params.trim) {
+		readfiles_ch
+			.join(longreads_ch, by: 0)
+			.set { all_reads_ch }
+	}
 
-	TRIM.out.trim_reads
-		.join(FILTLONG.out.filtered_longreads, by: 0)
-		.set { trim_filt_reads_ch }
-
-	UNICYCLER_HYBRID(trim_filt_reads_ch)
+	UNICYCLER_HYBRID(all_reads_ch)
 	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())        
 
 	// Plasmid analyses
