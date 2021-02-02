@@ -164,6 +164,7 @@ workflow ELLIPSIS_ASSEMBLY {
                 .mix(PLASFINDER.out.R_plas)
                 .mix(PROKKA.out.R_prokka)
                 .mix(MOB_RECON.out.R_mob)
+		.mix(MOB_RECON.out.R_cont)
 		.mix(ARIBA_RES.out.R_aribares)
 		.mix(ARIBA_VIR.out.R_aribavir)
 		.mix(QUAST.out.R_quast)
@@ -205,6 +206,7 @@ workflow ELLIPSIS_ANNOTATE {
                 .mix(PLASFINDER.out.R_plas)
                 .mix(PROKKA.out.R_prokka)
                 .mix(MOB_RECON.out.R_mob)
+		.mix(MOB_RECON.out.R_cont)
                 .collect()
                 .set { report_ch }
 
