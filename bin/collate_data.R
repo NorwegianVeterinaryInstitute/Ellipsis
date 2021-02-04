@@ -44,7 +44,7 @@ filter_flags <- function(df, acquired = TRUE) {
   df <- df %>%
     select(ref, gene_names, flag, ref_ctg_change) %>%
     {if (acquired == TRUE) 
-      filter(., flag %in% acq_flags) 
+        filter(., flag %in% acq_flags) 
       else 
         filter(., flag %in% int_flags)} %>%
     select(-flag)
@@ -112,16 +112,23 @@ fix_gene_names <- function(df, ending, db) {
 }
 
 # import data
+contig_reports <- get_data(path,
+                           pattern = "contig_report.txt",
+                           convert = TRUE) %>%
+  mutate(ref = sub("_contig_report.txt", "", ref),
+         element = if_else(
+           molecule_type == "chromosome",
+           "chromosome",
+           paste0(molecule_type, "_", primary_cluster_id)
+           )) %>%
+  select(ref, element, everything(), -c(sample_id, molecule_type))
+
 mobtyper_reports <- get_data(path,
-                             pattern = "mobtyper",
+                             pattern = "mobtyper_results",
                              convert = TRUE) %>%
-  mutate(ref = sub("_mobtyper", "", ref),
-         ref = sub(".fasta_report.txt", "", ref),
-         element = sub(".*_(plasmid_.*)", "\\1", ref)) %>%
-  rowwise() %>%
-  mutate(ref = sub(paste0("_", element), "", ref)) %>%
-  ungroup() %>%
-  select(ref, element, everything(), -file_id)
+  mutate(element = paste0("plasmid_", sub(".+:(.*?)", "\\1", sample_id)),
+         ref = sub("_mobtyper_results.txt", "", ref)) %>%
+  select(ref, element, everything(), -sample_id)
 
 prokka_reports <- get_data(path,
                            pattern = "prokka_report",
@@ -137,7 +144,8 @@ prokka_reports <- get_data(path,
   rename("val" = `organism: Genus species strain `) %>%
   separate(val, c("key", "value"), ":") %>%
   spread(key, value) %>%
-  select(ref, element, CDS, gene)
+  select(ref, element, CDS, gene, bases) %>%
+  mutate(bases = gsub(" ", "", bases))
 
 plasmidfinder_reports <- get_data(path,
                                   pattern = "plasfinder",
@@ -156,7 +164,7 @@ plasmidfinder_reports <- get_data(path,
          "pf_contig" = Contig)
 
 resfinder_reports <- get_data(path,
-                              pattern = "resfinder",
+                              pattern = "resfinder_results_tab",
                               convert = TRUE) %>%
   mutate(ref = sub("_resfinder_results_tab.tsv", "", ref),
          Contig = sub(".*\\|", "", Contig),
@@ -172,7 +180,7 @@ resfinder_reports <- get_data(path,
          "rf_contig" = Contig)
 
 virfinder_reports <- get_data(path,
-                              pattern = "virfinder",
+                              pattern = "virfinder_results_tab",
                               convert = TRUE) %>%
   mutate(ref = sub("_virfinder_results_tab.tsv", "", ref),
          Contig = sub(".*\\|", "", Contig),
@@ -197,7 +205,7 @@ if (run_ariba == "true") {
                           pattern = "ariba_virulence",
                           convert = TRUE) %>%
     fix_gene_names("_ariba_virulence_report.tsv", db = "virfinder")
-
+  
   df_vir <- tryCatch(filter_flags(rawdata_vir), error = function(e) FALSE)
   df_res <- tryCatch(filter_flags(rawdata_res), error = function(e) FALSE)
   
@@ -230,24 +238,25 @@ if (run_ariba == "true") {
   }
 } 
 
-summary_report <- mobtyper_reports %>%
-    left_join(prokka_reports, by = c("ref", "element")) %>%
-    mutate(
-      total_length = as.numeric(total_length),
-      num_contigs = as.numeric(num_contigs),
-      gene = as.numeric(gene)
-    ) %>%
-    group_by(ref) %>%
-    mutate(
-      n_plasmids = length(element),
-      size_range = paste(min(total_length), " - ", max(total_length)),
-      contig_range = paste(min(num_contigs), " - ", max(num_contigs)),
-      gene_range = paste(min(gene), " - ", max(gene))
-    ) %>%
-    select(ref, n_plasmids, size_range, contig_range, gene_range) %>%
-    summarise_all(list(func_paste)) %>%
-    rename("sample" = ref)  
-  
+summary_report <- contig_reports %>%
+  select(ref, element, size, gc, circularity_status) %>%
+  left_join(prokka_reports[, c("ref", "element", "gene")], by = c("ref", "element")) %>%
+  mutate(
+    plasmid_size = ifelse(element != "chromosome", size, NA),
+    plasmid_gene = ifelse(element != "chromosome", gene, NA)
+  ) %>%
+  mutate(plasmid_size = as.numeric(plasmid_size),
+         plasmid_gene = as.numeric(plasmid_gene)) %>%
+  group_by(ref) %>%
+  mutate(plasmid = ifelse(element == "chromosome", 0, 1),
+         n_plasmids = sum(plasmid)) %>%
+  select(ref, circularity_status, n_plasmids) %>%
+  summarise_all(list(func_paste)) %>%
+  ungroup() %>%
+  mutate(closed_genome = ifelse(grepl("incomplete", circularity_status), FALSE, TRUE)) %>%
+  select(ref, closed_genome, everything(),-circularity_status)
+
+
 # summarise and merge data
 res_truncated <- resfinder_reports %>%
   select(ref, element, rf_gene) %>%
@@ -265,14 +274,17 @@ plas_truncated <- plasmidfinder_reports %>%
   summarise_all(list(func_paste))
 
 total_report <- prokka_reports %>%
-  left_join(mobtyper_reports[, c(
+  left_join(contig_reports[, c(
     "ref",
     "element",
-    "num_contigs",
-    "total_length",
+    "circularity_status",
+    "contig_id",
+    "size",
     "gc",
     "rep_type(s)",
-    "PredictedMobility"
+    "relaxase_type(s)",
+    "repetitive_dna_type",
+    "filtering_reason"
   )], by = c("ref", "element")) %>%
   left_join(plas_truncated, by = c("ref", "element")) %>%
   left_join(res_truncated, by = c("ref", "element")) %>%
@@ -287,6 +299,12 @@ write.table(summary_report,
 
 write.table(total_report,
             "total_report.txt",
+            sep = "\t",
+            row.names = FALSE,
+            quote = FALSE)
+
+write.table(mobtyper_reports,
+            "mobtyper_report.txt",
             sep = "\t",
             row.names = FALSE,
             quote = FALSE)
