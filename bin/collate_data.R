@@ -213,7 +213,7 @@ if (run_ariba == "true") {
     create_table(df_vir) %>%
       write_delim(path = "ariba_virfinder_results.txt", delim = "\t")
     create_table(df_res) %>%
-      write_delim(path = "ariba_resfinder_results.txt", delim = "\t")
+      write_delim(file = "ariba_resfinder_results.txt", delim = "\t")
   }
   
   if (is.data.frame(df_vir) == TRUE & is.data.frame(df_res) == FALSE) {
@@ -227,7 +227,7 @@ if (run_ariba == "true") {
     "No genes passed quality checks" %>% 
       write_lines("ariba_virfinder_results.txt")
     create_table(df_res) %>%
-      write_delim(path = "ariba_resfinder_results.txt", delim = "\t")
+      write_delim(file = "ariba_resfinder_results.txt", delim = "\t")
   }
   
   if (is.data.frame(df_vir) == FALSE & is.data.frame(df_res) == FALSE) {
@@ -273,22 +273,70 @@ plas_truncated <- plasmidfinder_reports %>%
   group_by(ref, element) %>%
   summarise_all(list(func_paste))
 
-total_report <- prokka_reports %>%
-  left_join(contig_reports[, c(
-    "ref",
-    "element",
-    "circularity_status",
-    "contig_id",
-    "size",
-    "gc",
-    "rep_type(s)",
-    "relaxase_type(s)",
-    "repetitive_dna_type",
-    "filtering_reason"
-  )], by = c("ref", "element")) %>%
-  left_join(plas_truncated, by = c("ref", "element")) %>%
+res_contig_truncated <- resfinder_reports %>%
+  select(ref, element, rf_contig, rf_gene) %>%
+  group_by(ref, element, rf_contig) %>%
+  summarise_all(list(func_paste))
+
+vir_contig_truncated <- virfinder_reports %>%
+  select(ref, element, vf_contig, vf_gene) %>%
+  group_by(ref, element, vf_contig) %>%
+  summarise_all(list(func_paste))
+
+plas_contig_truncated <- plasmidfinder_reports %>%
+  select(ref, element, pf_contig, plasmidfinder_replicon) %>%
+  group_by(ref, element, pf_contig) %>%
+  summarise_all(list(func_paste))
+
+contig_report <- contig_reports[, c(
+  "ref",
+  "element",
+  "circularity_status",
+  "contig_id",
+  "size",
+  "gc",
+  "rep_type(s)",
+  "relaxase_type(s)",
+  "repetitive_dna_type",
+  "filtering_reason"
+)] %>%
+  left_join(plas_contig_truncated, by = c("ref","element","contig_id" = "pf_contig")) %>%
+  left_join(res_contig_truncated, by = c("ref","element","contig_id" = "rf_contig")) %>%
+  left_join(vir_contig_truncated, by = c("ref","element","contig_id" = "vf_contig")) %>%
+  select(-contig_id)
+
+element_report <- contig_reports[, c("ref",
+                                     "element",
+                                     "circularity_status",
+                                     "size",
+                                     "rep_type(s)",
+                                     "relaxase_type(s)")] %>%
+  mutate(n = 1,
+         size = as.numeric(size)) %>%
+  group_by(ref, element) %>%
+  mutate(total_size = sum(size),
+         contigs = sum(n)) %>%
+  na_if("-") %>%
+  summarise_all(list(func_paste)) %>%
+  mutate(closed = if_else(grepl("incomplete", circularity_status), FALSE, TRUE)) %>%
+  ungroup() %>%
+  select(
+    ref,
+    element,
+    contigs,
+    total_size,
+    closed,
+    everything(),
+    -c(circularity_status, size, n)
+  ) %>%
+  left_join(plas_truncated, by = c("ref","element")) %>%
   left_join(res_truncated, by = c("ref", "element")) %>%
-  left_join(vir_truncated, by = c("ref", "element"))
+  left_join(vir_truncated, by = c("ref", "element")) %>%
+  left_join(prokka_reports, by = c("ref","element")) %>%
+  select(-bases) %>%
+  relocate(CDS, .after = closed) %>%
+  relocate(gene, .after = CDS)
+
 
 # Write reports
 write.table(summary_report,
@@ -297,8 +345,14 @@ write.table(summary_report,
             row.names = FALSE,
             quote = FALSE)
 
-write.table(total_report,
-            "total_report.txt",
+write.table(contig_report,
+            "contig_report.txt",
+            sep = "\t",
+            row.names = FALSE,
+            quote = FALSE)
+
+write.table(element_report,
+            "element_report.txt",
             sep = "\t",
             row.names = FALSE,
             quote = FALSE)
@@ -326,4 +380,5 @@ write.table(plasmidfinder_reports,
             sep = "\t",
             row.names = FALSE,
             quote = FALSE)
+
 
