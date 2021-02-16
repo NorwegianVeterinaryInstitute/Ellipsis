@@ -5,6 +5,8 @@ process PROKKA {
 
         tag "$fasta.baseName"
 
+	label 'longtime'
+
         input:
         tuple val(datasetID), file(fasta)
 
