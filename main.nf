@@ -92,6 +92,8 @@ workflow ELLIPSIS_HYBRID {
 
         ARIBA_RES(readfiles_ch, aribaresdb)
         ARIBA_VIR(readfiles_ch, aribavirdb)
+	MLST_READS(readfiles_ch)
+	MLST_ASSEMBLY(UNICYCLER_HYBRID.out.new_assemblies)
         RESFINDER(fasta_ch)
         VIRFINDER(fasta_ch)
         PLASFINDER(fasta_ch)
@@ -105,6 +107,8 @@ workflow ELLIPSIS_HYBRID {
 		.mix(MOB_RECON.out.R_cont)
                 .mix(ARIBA_RES.out.R_aribares)
                 .mix(ARIBA_VIR.out.R_aribavir)
+		.mix(MLST_READS.out.R_stringmlst)
+		.mix(MLST_ASSEMBLY.out.R_mlst)
                 .mix(QUAST.out.R_quast)
                 .collect()
                 .set { report_ch }
@@ -154,6 +158,8 @@ workflow ELLIPSIS_ASSEMBLY {
 
 	ARIBA_RES(readfiles_ch, aribaresdb)
         ARIBA_VIR(readfiles_ch, aribavirdb)
+	MLST_READS(readfiles_ch)
+	MLST_ASSEMBLY(UNICYCLER.out.new_assemblies)
 	RESFINDER(fasta_ch)
         VIRFINDER(fasta_ch)
         PLASFINDER(fasta_ch)
@@ -167,6 +173,8 @@ workflow ELLIPSIS_ASSEMBLY {
 		.mix(MOB_RECON.out.R_cont)
 		.mix(ARIBA_RES.out.R_aribares)
 		.mix(ARIBA_VIR.out.R_aribavir)
+		.mix(MLST_READS.out.R_stringmlst)
+		.mix(MLST_ASSEMBLY.out.R_mlst)
 		.mix(QUAST.out.R_quast)
                 .collect()
                 .set { report_ch }
@@ -196,6 +204,7 @@ workflow ELLIPSIS_ANNOTATE {
                         .set { fasta_ch }
         }
 
+	MLST_ASSEMBLY(assembly_ch)
         RESFINDER(fasta_ch)
         VIRFINDER(fasta_ch)
         PLASFINDER(fasta_ch)
@@ -207,6 +216,7 @@ workflow ELLIPSIS_ANNOTATE {
                 .mix(PROKKA.out.R_prokka)
                 .mix(MOB_RECON.out.R_mob)
 		.mix(MOB_RECON.out.R_cont)
+		.mix(MLST_ASSEMBLY.out.R_mlst)
                 .collect()
                 .set { report_ch }
 
@@ -231,6 +241,7 @@ if (params.track == "hybrid") {
         include { QUAST } from "${params.module_dir}/QUAST.nf"
         include { MOB_RECON } from "${params.module_dir}/MOBSUITE.nf"
 	include { ARIBA_RES;ARIBA_VIR } from "${params.module_dir}/ARIBA.nf"
+	include { MLST_READS;MLST_ASSEMBLY } from "${params.module_dir}/MLST.nf"
 	include { RESFINDER } from "${params.module_dir}/RESFINDER.nf"
         include { VIRFINDER } from "${params.module_dir}/VIRFINDER.nf"
         include { PLASFINDER } from "${params.module_dir}/PLASFINDER.nf"
@@ -244,6 +255,7 @@ if (params.track == "short_assembly") {
 	include { FASTQC; FASTQC as FASTQC_POST } from "${params.module_dir}/FASTQC.nf"
         include { MULTIQC_PRE; MULTIQC_POST } from "${params.module_dir}/MULTIQC.nf"
 	include { ARIBA_RES;ARIBA_VIR } from "${params.module_dir}/ARIBA.nf"
+	include { MLST_READS;MLST_ASSEMBLY } from "${params.module_dir}/MLST.nf"
 	include { TRIM } from "${params.module_dir}/TRIM.nf"
 	include { UNICYCLER } from "${params.module_dir}/UNICYCLER.nf"
 	include { QUAST } from "${params.module_dir}/QUAST.nf"
@@ -262,6 +274,7 @@ if (params.track == "no_assembly") {
         include { RESFINDER } from "${params.module_dir}/RESFINDER.nf"
         include { VIRFINDER } from "${params.module_dir}/VIRFINDER.nf"
         include { PLASFINDER } from "${params.module_dir}/PLASFINDER.nf"
+	include { MLST_ASSEMBLY } from "${params.module_dir}/MLST.nf"
         include { PROKKA } from "${params.module_dir}/PROKKA.nf"
         include { REPORT } from "${params.module_dir}/REPORT.nf"
 
