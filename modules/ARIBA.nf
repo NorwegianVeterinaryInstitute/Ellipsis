@@ -40,3 +40,25 @@ process ARIBA_VIR {
         """
 }
 
+process ARIBA_MLST {
+        conda "/cluster/projects/nn9305k/src/miniconda/envs/bifrost"
+
+        publishDir "${params.out_dir}/results/ariba", pattern: "*ariba_mlst_report.tsv", mode: "copy"
+	publishDir "${params.out_dir}/results/ariba", pattern: "*ariba_mlst_detailed_report.tsv", mode: "copy"
+        publishDir "${params.out_dir}/results/ariba", pattern: "*_ariba_mlst.log", mode: "copy"
+
+        input:
+        tuple val(datasetID), file(R1), file(R2)
+        path mlstdb
+
+        output:
+        file("*")
+        path "*ariba_mlst_report.tsv", emit: R_aribamlst
+
+        script:
+        """
+        ariba run --threads $task.cpus $mlstdb $R1 $R2 results &> ${datasetID}_ariba_mlst.log
+        cp results/report.tsv ${datasetID}_ariba_mlst_detailed_report.tsv
+	cp results/mlst_report.tsv ${datasetID}_ariba_mlst_report.tsv
+        """
+}
