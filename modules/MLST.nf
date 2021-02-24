@@ -3,6 +3,8 @@ process MLST {
 
         publishDir "${params.out_dir}/results/mlst", pattern: "*assembly_mlst_report.tsv", mode: "copy"
 
+	tag "$datasetID"
+
         input:
         tuple val(datasetID), file(assembly)
 

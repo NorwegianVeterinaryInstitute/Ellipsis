@@ -4,6 +4,8 @@ process ARIBA_RES {
         publishDir "${params.out_dir}/results/ariba", pattern: "*ariba_resfinder_report.tsv", mode: "copy"
         publishDir "${params.out_dir}/results/ariba", pattern: "*_ariba_res.log", mode: "copy"
 
+	tag "$datasetID"
+
         input:
         tuple val(datasetID), file(R1), file(R2)
         path amrdb
@@ -24,6 +26,8 @@ process ARIBA_VIR {
 
         publishDir "${params.out_dir}/results/ariba", pattern: "*ariba_virulence_report.tsv", mode: "copy"
         publishDir "${params.out_dir}/results/ariba", pattern: "*_ariba_vir.log", mode: "copy"
+
+	tag "$datasetID"
 
         input:
         tuple val(datasetID), file(R1), file(R2)
@@ -46,6 +50,8 @@ process ARIBA_MLST {
         publishDir "${params.out_dir}/results/ariba", pattern: "*ariba_mlst_report.tsv", mode: "copy"
 	publishDir "${params.out_dir}/results/ariba", pattern: "*ariba_mlst_detailed_report.tsv", mode: "copy"
         publishDir "${params.out_dir}/results/ariba", pattern: "*_ariba_mlst.log", mode: "copy"
+
+	tag "$datasetID"
 
         input:
         tuple val(datasetID), file(R1), file(R2)
