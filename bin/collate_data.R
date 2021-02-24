@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# ABSTRACT: Collate data from the plasmid pipeline into one table
+# ABSTRACT: Collate data from Ellipsis into informative datasets
 library(dplyr)
 library(impoRt)
 library(funtools)
@@ -195,7 +195,18 @@ virfinder_reports <- get_data(path,
          "vf_gene_identity" = Identity,
          "vf_contig" = Contig)
 
+mlst_report <- get_data(path,
+                        pattern = "assembly_mlst_report",
+                        convert = TRUE) %>%
+  mutate(ref = sub("_.+", "", ref)) %>%
+  select(-FILE)
+
 if (run_ariba == "true") {
+  mlst_ariba <- get_data(path,
+                         pattern = "ariba_mlst_report",
+                         convert = TRUE) %>%
+    mutate(ref = sub("_ariba_mlst_report.tsv","", ref))
+  
   rawdata_res <- get_data(path,
                           pattern = "ariba_resfinder",
                           convert = TRUE) %>%
@@ -254,8 +265,15 @@ summary_report <- contig_reports %>%
   summarise_all(list(func_paste)) %>%
   ungroup() %>%
   mutate(closed_genome = ifelse(grepl("incomplete", circularity_status), FALSE, TRUE)) %>%
-  select(ref, closed_genome, everything(),-circularity_status)
+  select(ref, closed_genome, everything(),-circularity_status) %>%
+  left_join(mlst_report[,c("ref","ST")], by = "ref") %>%
+  rename("assembly_ST" = ST)
 
+if (run_ariba == "true") {
+  summary_report <- summary_report %>%
+    left_join(mlst_ariba[,c("ref","ST")], by = "ref") %>%
+    rename("reads_ST" = ST)
+}
 
 # summarise and merge data
 res_truncated <- resfinder_reports %>%
@@ -337,7 +355,6 @@ element_report <- contig_reports[, c("ref",
   relocate(CDS, .after = closed) %>%
   relocate(gene, .after = CDS)
 
-
 # Write reports
 write.table(summary_report,
             "summary_report.txt",
@@ -380,5 +397,6 @@ write.table(plasmidfinder_reports,
             sep = "\t",
             row.names = FALSE,
             quote = FALSE)
+
 
 
