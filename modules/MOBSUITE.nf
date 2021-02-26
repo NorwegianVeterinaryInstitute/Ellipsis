@@ -13,12 +13,10 @@ process MOB_RECON {
 
         output:
         file("*")
-        tuple val(datasetID), file("*plasmid*fasta"), emit: plasmidFasta
+        tuple val(datasetID), file("*plasmid*fasta"), optional: true, emit: plasmidFasta
         tuple val(datasetID), file("*chromosome.fasta"), emit: chromFasta
         path "*contig_report.txt", emit: R_cont
-	path "*mobtyper_results.txt", emit: R_mob
-
-        errorStrategy 'ignore'
+	path "*mobtyper_results.txt", optional: true, emit: R_mob
 
         script:
         """
