@@ -1,4 +1,3 @@
-
 log.info "=================================================="
 log.info "=================================================="
 log.info "                                                  "
@@ -79,7 +78,7 @@ workflow ELLIPSIS_HYBRID {
 	}
 
 	UNICYCLER_HYBRID(all_reads_ch)
-	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())        
+	QUAST(UNICYCLER_HYBRID.out.quast_ch.collect())
 
 	// Plasmid analyses
 	MOB_RECON(UNICYCLER_HYBRID.out.new_assemblies)
