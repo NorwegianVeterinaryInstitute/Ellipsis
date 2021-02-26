@@ -115,13 +115,13 @@ fix_gene_names <- function(df, ending, db) {
 contig_reports <- get_data(path,
                            pattern = "contig_report.txt",
                            convert = TRUE) %>%
-  mutate(ref = sub("_contig_report.txt", "", ref),
-         element = if_else(
+  mutate(element = if_else(
            molecule_type == "chromosome",
            "chromosome",
            paste0(molecule_type, "_", primary_cluster_id)
            )) %>%
-  select(ref, element, everything(), -c(sample_id, molecule_type))
+  select(sample_id, element, everything(), -c(ref, molecule_type)) %>%
+  rename("ref" = sample_id)
 
 mobtyper_reports <- get_data(path,
                              pattern = "mobtyper_results",
@@ -198,8 +198,8 @@ virfinder_reports <- get_data(path,
 mlst_report <- get_data(path,
                         pattern = "assembly_mlst_report",
                         convert = TRUE) %>%
-  mutate(ref = sub("_.+", "", ref)) %>%
-  select(-FILE)
+  mutate(FILE = sub(".fasta", "", FILE)) %>%
+  select(-ref)
 
 if (run_ariba == "true") {
   mlst_ariba <- get_data(path,
@@ -266,7 +266,7 @@ summary_report <- contig_reports %>%
   ungroup() %>%
   mutate(closed_genome = ifelse(grepl("incomplete", circularity_status), FALSE, TRUE)) %>%
   select(ref, closed_genome, everything(),-circularity_status) %>%
-  left_join(mlst_report[,c("ref","ST")], by = "ref") %>%
+  left_join(mlst_report[,c("FILE","ST")], by = c("ref" = "FILE")) %>%
   rename("assembly_ST" = ST)
 
 if (run_ariba == "true") {
