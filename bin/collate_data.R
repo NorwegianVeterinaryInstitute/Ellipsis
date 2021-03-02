@@ -5,12 +5,18 @@ library(impoRt)
 library(funtools)
 library(tidyr)
 library(readr)
+library(purrr)
 
 path <- "."
 args <- commandArgs(trailingOnly = TRUE)
 run_ariba <- args[1]
 
 # Functions
+drop_cols <- function(df, ...){
+  df %>% 
+    select(-one_of(map_chr(enquos(...), quo_name)))
+}
+
 filter_flags <- function(df, acquired = TRUE) {
   acq_flags <- c(
     "27",
@@ -43,34 +49,30 @@ filter_flags <- function(df, acquired = TRUE) {
   )
   df <- df %>%
     select(ref, gene_names, flag, ref_ctg_change) %>%
-    {if (acquired == TRUE) 
-        filter(., flag %in% acq_flags) 
-      else 
-        filter(., flag %in% int_flags)} %>%
+    mutate(flagtest = case_when(
+      acquired == TRUE ~ ifelse(flag %in% acq_flags, TRUE, FALSE),
+      acquired == FALSE ~ ifelse(flag %in% int_flags, TRUE, FALSE))
+    ) %>%
     select(-flag)
-  
-  stopifnot(dim(df)[1] != 0)
   
   return(df)
 }
 
 create_table <- function(df) {
   df %>%
+    mutate(result = ifelse(flagtest == TRUE, "1", "1*")) %>%
+    select(-c(flagtest, ref_ctg_change)) %>%
     pivot_wider(names_from = gene_names, 
-                values_from = ref_ctg_change,
+                values_from = result,
                 values_fn = func_paste) %>%
     pivot_longer(names_to = "gene",
                  values_to = "result",
                  cols = -ref) %>%
-    mutate(
-      result_total = ifelse(is.na(result), 0, 1),
-      result_total = as.character(result_total)
-    ) %>%
-    select(-result) %>%
-    rename("result" = result_total) %>%
+    mutate(result = ifelse(is.na(result), 0, result)) %>%
     pivot_wider(names_from = gene,
                 values_from = result,
-                values_fn = func_paste)
+                values_fn = func_paste) %>%
+    drop_cols(NANA)
 }
 
 fix_gene_names <- function(df, ending, db) {
@@ -217,36 +219,13 @@ if (run_ariba == "true") {
                           convert = TRUE) %>%
     fix_gene_names("_ariba_virulence_report.tsv", db = "virfinder")
   
-  df_vir <- tryCatch(filter_flags(rawdata_vir), error = function(e) FALSE)
-  df_res <- tryCatch(filter_flags(rawdata_res), error = function(e) FALSE)
-  
-  if (is.data.frame(df_vir) == TRUE & is.data.frame(df_res) == TRUE) {
-    create_table(df_vir) %>%
-      write_delim(path = "ariba_virfinder_results.txt", delim = "\t")
-    create_table(df_res) %>%
-      write_delim(file = "ariba_resfinder_results.txt", delim = "\t")
-  }
-  
-  if (is.data.frame(df_vir) == TRUE & is.data.frame(df_res) == FALSE) {
-    create_table(df_vir) %>%
-      write_delim(path = "ariba_virfinder_results.txt", delim = "\t")
-    "No genes passed quality checks" %>% 
-      write_lines("ariba_resfinder_results.txt")
-  }
-  
-  if (is.data.frame(df_vir) == FALSE & is.data.frame(df_res) == TRUE) {
-    "No genes passed quality checks" %>% 
-      write_lines("ariba_virfinder_results.txt")
-    create_table(df_res) %>%
-      write_delim(file = "ariba_resfinder_results.txt", delim = "\t")
-  }
-  
-  if (is.data.frame(df_vir) == FALSE & is.data.frame(df_res) == FALSE) {
-    "No genes passed quality checks" %>% 
-      write_lines("ariba_virfinder_results.txt")
-    "No genes passed quality checks" %>% 
-      write_lines("ariba_resfinder_results.txt")
-  }
+  df_vir <- filter_flags(rawdata_vir)
+  df_res <- filter_flags(rawdata_res)
+
+  create_table(df_vir) %>%
+    write_delim(file = "ariba_virfinder_results.txt", delim = "\t")
+  create_table(df_res) %>%
+    write_delim(file = "ariba_resfinder_results.txt", delim = "\t")
 } 
 
 summary_report <- contig_reports %>%
