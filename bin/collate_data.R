@@ -143,7 +143,7 @@ prokka_reports <- get_data(path,
   rowwise() %>%
   mutate(ref = sub(paste0("_", element), "", ref)) %>%
   ungroup() %>%
-  rename("val" = `organism: Genus species strain `) %>%
+  rename("val" = 2) %>%
   separate(val, c("key", "value"), ":") %>%
   spread(key, value) %>%
   select(ref, element, CDS, gene, bases) %>%
