@@ -125,12 +125,20 @@ contig_reports <- get_data(path,
   select(sample_id, element, everything(), -c(ref, molecule_type)) %>%
   rename("ref" = sample_id)
 
-mobtyper_reports <- get_data(path,
-                             pattern = "mobtyper_results",
-                             convert = TRUE) %>%
-  mutate(element = paste0("plasmid_", sub(".+:(.*?)", "\\1", sample_id)),
-         ref = sub("_mobtyper_results.txt", "", ref)) %>%
-  select(ref, element, everything(), -sample_id)
+if (length(list.files(pattern = "*mobtyper_results.txt")) > 0) {
+  mobtyper_reports <- get_data(path,
+                               pattern = "mobtyper_results",
+                               convert = TRUE) %>%
+    mutate(element = paste0("plasmid_", sub(".+:(.*?)", "\\1", sample_id)),
+           ref = sub("_mobtyper_results.txt", "", ref)) %>%
+    select(ref, element, everything(), -sample_id)
+  
+  write.table(mobtyper_reports,
+              "mobtyper_report.txt",
+              sep = "\t",
+              row.names = FALSE,
+              quote = FALSE)
+}
 
 prokka_reports <- get_data(path,
                            pattern = "prokka_report",
@@ -349,12 +357,6 @@ write.table(contig_report,
 
 write.table(element_report,
             "element_report.txt",
-            sep = "\t",
-            row.names = FALSE,
-            quote = FALSE)
-
-write.table(mobtyper_reports,
-            "mobtyper_report.txt",
             sep = "\t",
             row.names = FALSE,
             quote = FALSE)
