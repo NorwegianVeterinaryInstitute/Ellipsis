@@ -1,5 +1,5 @@
 process VIRFINDER {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
+        conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons_ellipsis"
 
         publishDir "${params.out_dir}/results/virfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.out_dir}/results/virfinder", pattern: "*virfinder.log", mode: "copy"

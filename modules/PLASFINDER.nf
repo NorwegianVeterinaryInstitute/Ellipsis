@@ -1,5 +1,5 @@
 process PLASFINDER {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons"
+        conda "/cluster/projects/nn9305k/src/miniconda/envs/cge_addons_ellipsis"
 
         publishDir "${params.out_dir}/results/plasmidfinder", pattern: "*results_tab.tsv", mode: "copy"
         publishDir "${params.out_dir}/results/plasmidfinder", pattern: "*plasmidfinder.log", mode: "copy"
@@ -14,7 +14,7 @@ process PLASFINDER {
         path "*results_tab.tsv", emit: R_plas
 
         """
-        python /cluster/projects/nn9305k/src/plasmidfinder/plasmidfinder.py -i $fasta -o . -x -p $params.plasfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> plasmidfinder.log
+        python /cluster/projects/nn9305k/src/plasmidfinder_ellipsis/plasmidfinder.py -i $fasta -o . -x -p $params.plasfinder_db -mp /cluster/software/BLAST+/2.8.1-foss-2018b/bin/blastn &> plasmidfinder.log
         rename '' "$fasta.baseName"_"plasfinder"_ *
         """
 }
