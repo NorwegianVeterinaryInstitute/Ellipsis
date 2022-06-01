@@ -1,5 +1,5 @@
 process MLST {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/mlst"
+        conda "/cluster/projects/nn9305k/src/miniconda/envs/mlst_2.22.0"
 
         publishDir "${params.out_dir}/results/mlst", pattern: "*assembly_mlst_report.tsv", mode: "copy"
 
