@@ -1,12 +1,11 @@
 process MOB_RECON {
-        conda "/cluster/projects/nn9305k/src/miniconda/envs/mobsuite"
+	conda (params.enable_conda ? 'bioconda::mob_suite=3.1.8' : null)
+        container 'quay.io/biocontainers/mob_suite:3.1.8--pyhdfd78af_1'
 
         publishDir "${params.out_dir}/results/mobsuite/plasmid_fasta", pattern: "*plasmid*fasta", mode: "copy"
         publishDir "${params.out_dir}/results/mobsuite", pattern: "*mob_recon.log", mode: "copy"
         publishDir "${params.out_dir}/results/mobsuite/contig_reports", pattern: "*contig_report.txt", mode: "copy"
         publishDir "${params.out_dir}/results/mobsuite/chromosome_fasta", pattern: "*chromosome.fasta", mode: "copy"
-
-        tag "$datasetID"
 
         input:
         tuple val(datasetID), file(assembly)
